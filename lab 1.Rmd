@@ -1,0 +1,93 @@
+---
+title: "Lab 1"
+author: "PSTAT 131/231"
+output:
+  html_document:
+    code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE,
+                      warning = FALSE)
+```
+
+## R and RStudio
+
+All work in this course, including homework, labs, and the final project, will be conducted using *R* and *RStudio*. I understand that not all students will already be familiar with *R*, so I don't expect that everyone starts out at the same coding level. The instructional team, myself included, are here to help!
+
+First, go to <https://www.r-project.org/> and click *Download R*. Select a CRAN mirror link. Do this **EVEN IF** you already have R installed on your machine. If you have a previous R installation, re-downloading R will *update* your copy of R to the most recent version, which often fixes many small problems.
+
+Next, go to <https://www.rstudio.com/products/rstudio/download/> and download the **free** version of RStudio Desktop. We will almost always open and use RStudio to interact with R.
+
+You will be working with RStudio a lot, and you'll have time to learn most of the bells and whistles RStudio provides. Think about RStudio as your “workbench”. Keep in mind that RStudio is MORE than plain R. RStudio is an environment that makes it easier to work with R, while handling many of the little tasks than can be a hassle.
+
+At this point, your TA will give a brief overview of the RStudio default four-pane layout and demonstrate how to change fonts, settings, etc.
+
+### Getting Help with R
+
+Much of the time we spend using R involves interacting with functions. For example, to find the average of three numbers, we can call the `mean()` function:
+
+```{r}
+mean(c(1, 2, 3))
+```
+
+Each function in R has its own set of arguments and possible values that these arguments accept. You will often need to look up a specific function or one of its arguments -- very often! The good news is, there is a lot of R documentation out there, and it's fairly easy to get help.
+
+To get help about `mean()`, you can uncomment (delete the `#`) and run either of these lines:
+
+```{r}
+# ?mean
+# help(mean)
+```
+
+Or simply open your Web browser and do a search for something like `R function mean help`.
+
+## GitHub
+
+This course will also use GitHub. You will all be asked to create a GitHub repository for your final project, and to submit the link to that repository for a grade at the end of the quarter. You will also need to create and use GitHub repositories for your weekly homework assignments.
+
+If you are new to GitHub, *don't panic*. You're not alone.
+
+We use GitHub in this course so that students have a (relatively) low-pressure opportunity to practice and familiarize themselves with it. In the current data science world, using GitHub is a marketable skill. In addition, RStudio works well with GitHub, and is a (relatively) painless introduction.
+
+Go to <https://github.com/> and create a free account, or log in with an existing account if you already have one.
+
+[This](https://happygitwithr.com/) is a great resource to help connect GitHub with RStudio.
+
+Install Git; see <https://happygitwithr.com/install-git.html> for additional details.
+
+## Get RStudio and Git Talking
+
+Let's start the conversation!
+
+Once you have R, Git, and RStudio installed, and you made a GitHub account, all that's left is to introduce yourself to Git and connect everything together. The other good news is that, if all goes well, you only have to do this whole setup process once.
+
+Follow steps 7 through 12, [starting here:](https://happygitwithr.com/hello-git.html).
+
+## Make Your First Repository
+
+Go to your GitHub home page and click the green button `New` to create a new repository. Name it something related to Lab 1; an example might be `lab-1-coburn`. Once you create the repository, there will be a link at the top -- see below, circled:
+
+![](images/Screen%20Shot%202022-03-25%20at%205.37.09%20PM-01.png)
+
+Click the button directly to the right of the link. Then open RStudio and use the menus to create a new project from a GitHub repository. Paste the URL you just copied! RStudio should open a project for that repository.
+
+To make your first commit to the repo, move the .Rmd file for this lab into that directory. Use the `Git` pane in the top right of RStudio to make and push your first commit!
+
+## Update an .Rmd
+
+Markdown is the language R uses to create and update documents. If you write in a Markdown file within a **code chunk**, as shown below, that text will be processed and run like R code. If you write *outside* of the code chunks, like here, that text will not be run and will appear as text. You can format it as usual, include headings, etc.!
+
+.Rmd files are a special type of file, referred to as a dynamic document, that allows users to combine narrative (text) with R code. Because you will be turning in all your work for this course as .Rmd files, it is important that you quickly become familiar with this resource.
+
+Try updating the code in the following code chunk. Assign `2+2` to another object, called `y`. `<-` is the assignment operator in R, commonly read as "gets."
+
+```{r}
+# This is a code chunk!
+# Any uncommented text in here will be run as R code.
+# For example:
+x <- seq(1, 10, 1)
+x
+```
+
+
