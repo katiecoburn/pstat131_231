@@ -254,3 +254,4 @@ mpg %>%
   arrange(avg_hwy)
 ```
 
+It's not demonstrated here, but you can also use other verbs like `mutate()` and `filter()` in conjunction with `group_by()`. Use `ungroup()` when you want to return to ungrouped data.
