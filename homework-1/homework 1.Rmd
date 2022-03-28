@@ -1,0 +1,54 @@
+---
+title: "Homework 1"
+author: "PSTAT 131/231"
+output:
+  html_document:
+    code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE,
+                      warning = FALSE)
+```
+
+## Machine Learning Main Ideas
+
+Please answer the following questions. Be sure that your solutions are clearly marked and that your document is neatly formatted.
+
+You are not required to rephrase everything in your own words, but you should cite whatever materials you use (this can be as simple as "from the lecture/page _ of the book").
+
+### Question 1:
+
+Define supervised and unsupervised learning. What are the difference(s) between them?
+
+### Question 2:
+
+Explain the difference between a regression model and a classification model, specifically in the context of machine learning.
+
+### Question 3:
+
+Name two commonly used metrics for regression ML problems. Name two commonly used metrics for classification ML problems.
+
+### Question 4:
+
+As discussed, statistical models can be used for different purposes. These purposes can generally be classified into the following three categories. Provide a brief description of each.
+
+- Descriptive models:
+
+- Inferential models:
+
+- Predictive models:
+
+### Question 5:
+
+Predictive models are frequently used in machine learning, and they can usually be described as either mechanistic or empirically-driven. Answer the following questions.
+
+- Define mechanistic. Define empirically-driven. How do these model types differ? How are they similar?
+
+- In general, is a mechanistic or empirically-driven model easier to understand? Explain your choice.
+
+- Describe how the bias-variance tradeoff is related to the use of mechanistic or empirically-driven models.
+
+### Question 6:
+
+A political candidate's campaign has collected some detailed voter history data from their constituents. 
