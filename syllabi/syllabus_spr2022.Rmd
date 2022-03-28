@@ -14,6 +14,7 @@ header-includes:
     - \usepackage{multirow}
     - \usepackage{graphicx}
     - \usepackage{lscape}
+    - \usepackage{float}
 #    - \usepackage{draftwatermark}
 link-citations: yes
 ---
@@ -55,12 +56,12 @@ knitr::opts_chunk$set(echo = TRUE)
 \textsc{Teaching Assistants:} &Hanmo Li (\href{mailto:hanmo@pstat.ucsb.edu}{\texttt{hanmo@pstat.ucsb.edu}})\\
     &Lihao Xiao (\href{mailto:lihao@pstat.ucsb.edu}{\texttt{lihao@pstat.ucsb.edu}}) \\
     %&Minwoo Park (\href{mailto:minwoo@pstat.ucsb.edu}{\texttt{minwoo@pstat.ucsb.edu}}) \\
-\textsc{Lecture:} &MW 5:00 - 6:15 pm Embarcadero Hall or \\ &Zoom \href{https://ucsb.zoom.us/j/6425299662}{https://ucsb.zoom.us/j/6425299662} \\
+\textsc{Lecture:} &TR 12:30 - 1:45 pm Buchanan 1930 \\
 \textsc{Sections:}
-&T 10:00 - 10:50 am SSMS 1303 \textsc{Xiao} \\
-&T 4:00 - 4:50 pm SSMS 1302 \textsc{Xiao} \\
-&T 5:00 - 5:50 pm SSMS 1302 \textsc{Li}\\
-&T 6:00 - 6:50 pm SSMS 1302 \textsc{Li}\\
+&T 5:00 - 5:50 pm PHELP 1513 \textsc{Li} \\
+&W 8:00 - 8:50 am PHELP 1513 \textsc{Xiao} \\
+&W 9:00 - 9:50 am PHELP 1513 \textsc{Xiao} \\
+&W 12:00 - 12:50 pm PHELP 1525 \textsc{Li} \\
 \end{tabular}
 \end{center}
 
@@ -69,7 +70,7 @@ knitr::opts_chunk$set(echo = TRUE)
 \subsection*{Description}
 \textsc{Statistical} machine learning is used to discover patterns and relationships in large data sets. Topics will include: data exploration, classification and regression tress, random forests, clustering and association rules. Building predictive models focusing on model selection, model comparison and performance evaluation. Emphasis will be on concepts, methods and data analysis; and students are expected to complete a significant class project using real-world data. Prerequisites: PSTAT 120A-B and PSTAT 126 with a minimum grade of C or better. Credit units: 4.
 
-\vskip6pt\noindent \textsc{This course} is taught at two levels, one aimed at undergraduates (131 level) and one at graduate students (231 level). Lectures are given at a level designed to be accessible and relevant to all students in the course. Students taking the course at the 231 level will be assigned additional homework questions and are expected to do reading in \textbf{both} the 131 and 231-level textbooks, listed below.
+\vskip6pt\noindent \textsc{This course} is taught at two levels, one aimed at undergraduates (131 level) and one at graduate students (231 level). Lectures are given at a level designed to be accessible and relevant to all students in the course. Students taking the course at the 231 level will be assigned \textbf{additional homework questions} and are expected to do reading in \textbf{both} the 131 and 231-level textbooks, listed below. The final project assignment is the same for both levels.
 
 \subsection*{Learning Outcomes}
 Upon completion of this course, students should be able to:
@@ -81,12 +82,12 @@ them mathematically;
 \end{enumerate}
 
 \subsection*{Piazza}
-\textsc{The course} Piazza page can be found here: \href{https://piazza.com/ucsb/winter2022/pstat131231}{https://piazza.com/ucsb/winter2022/pstat131231}. Sign up with your UCSB school email and with access code \textbf{3435}.
+\textsc{The course} Piazza page can be found here: \href{https://piazza.com/ucsb/spring2022/pstat131231}{https://piazza.com/ucsb/spring2022/pstat131231}. Sign up with your UCSB school email and with access code \textbf{3435}.
 
 \subsection*{Format}
 <!-- \textsc{The first two weeks} of the course are online only. Lectures will be synchronous over Zoom (at the address above). Any lecture slides will be posted on GauchoSpace before class. All \textbf{lectures will be recorded} and uploaded. -->
 
-\textsc{As per the} Spring Quarter Instruction message from the Office of the Executive Vice Chancellor, dual-mode instruction -- defined as livestreaming or classroom recording -- \textbf{cannot} be provided for courses. With this in mind, lectures will be provided in person \textbf{only}. Any lecture slides will be posted on GauchoSpace before the corresponding class. If special circumstances require it, specific lectures may be recorded and shared, but this is an exception.
+\textsc{As per the} Spring Quarter Instruction message from the Office of the Executive Vice Chancellor, dual-mode instruction -- defined as livestreaming or classroom recording -- \textbf{cannot} be provided for courses. With this in mind, lectures will be provided in person \textbf{only}. Any lecture slides will be posted on GauchoSpace before the corresponding class. If special circumstances require it, specific lectures may be recorded and shared, but this is an exception. If you cannot attend a lecture in person, let the instructor know, and we may be able to make adjustments as necessary.
 
 <!-- \vskip6pt\noindent If/when classes are held in person, every class will be \textbf{simultaneously} streamed live on Zoom (at the address above), so that students can either attend remotely or physically in person. The stream \textbf{will be recorded} and uploaded. This is offered so that students who cannot physically attend \textbf{for any reason} have the option to attend class virtually without penalty. -->
 
@@ -127,42 +128,35 @@ them mathematically;
 \subsection*{Tentative Schedule}
 \textsc{The tentative} weekly schedule is indicated below. The topics and reading are subject to change based on the progress of the class.
 
-<!-- % Please add the following required packages to your document preamble: -->
-<!-- % \usepackage{booktabs} -->
-<!-- % \usepackage{multirow} -->
-<!-- % \usepackage{graphicx} -->
-<!-- % \usepackage{lscape} -->
-\begin{landscape}
-\begin{table}[]
-\centering
+\begin{table}[H]
 \resizebox{\textwidth}{!}{%
-\begin{tabular}{@{}lllllllc@{}}
-\toprule
-\textbf{Week}                                        & \textbf{Date} & \textbf{Topic}                                                         & \textbf{131 Reading}                                          & \textbf{231 Reading}                                                            & \textbf{Section}        & \textbf{Assignments} & \multicolumn{1}{l}{\textbf{Final Project Stage}}                                                                           \\ \midrule
-\multicolumn{1}{c}{\multirow{2}{*}{\textbf{Week 1}}} & Jan. 3        & \begin{tabular}[c]{@{}l@{}}Introduction \&\\ basics of ML\end{tabular} & Ch. 1 ISLR                                                    & Ch. 1 ESL                                                                       & \multirow{2}{*}{Lab 1}  &                      & \multirow{2}{*}{Find a partner}                                                                                            \\
-\multicolumn{1}{c}{}                                 & Jan. 5        & Bias-variance tradeoff (I)                                             & \multirow{2}{*}{Ch. 2 ISLR}                                   & \multirow{2}{*}{Ch. 2 ESL}                                                      &                         &                      &                                                                                                                            \\
-\multirow{2}{*}{\textbf{Week 2}}                     & Jan. 10       & Bias-variance tradeoff (II)                                            &                                                               &                                                                                 & \multirow{2}{*}{Lab 2}  &                      & \multirow{4}{*}{\begin{tabular}[c]{@{}c@{}}Decide on topic\\ and locate data \\ set(s)\end{tabular}}                       \\
-                                                     & Jan. 12       & Linear regression (I)                                                  & Ch. 3 ISLR                                                    & Ch. 3 ESL                                                                       &                         & Homework 1 Due       &                                                                                                                            \\
-\multicolumn{1}{c}{\multirow{2}{*}{\textbf{Week 3}}} & Jan.17        & \textbf{NO CLASS MEETING}                                              & \multicolumn{2}{c}{\textbf{HOLIDAY}}                                                                                                            & \multirow{2}{*}{Lab 3}  &                      &                                                                                                                            \\
-\multicolumn{1}{c}{}                                 & Jan. 19       & Linear regression (II)                                                 & Ch. 3 ISLR                                                    & Ch. 3 ESL                                                                       &                         & Quiz 1               &                                                                                                                            \\
-\multirow{2}{*}{\textbf{Week 4}}                     & Jan. 24       & Logistic regression                                                    & Ch. 4 - 4.3 ISLR                                              & Ch. 4.4 ESL                                                                     & \multirow{2}{*}{Lab 4}  &                      & \multirow{4}{*}{\begin{tabular}[c]{@{}c@{}}Load and tidy data\\ \\ Run and write up\\ descriptive\\ analyses\end{tabular}} \\
-                                                     & Jan. 26       & Discriminant analysis                                                  & \begin{tabular}[c]{@{}l@{}}Rest of Ch. 4 \\ ISLR\end{tabular} & \begin{tabular}[c]{@{}l@{}}Rest of Ch. 4 \\ ESL\end{tabular}                    &                         & Homework 2 Due       &                                                                                                                            \\
-\multirow{2}{*}{\textbf{Week 5}}                     & Jan. 31       & Resampling methods                                                     & Ch. 5 ISLR                                                    & Ch. 7 ESL                                                                       & \multirow{2}{*}{Lab 5}  & Quiz 2               &                                                                                                                            \\
-                                                     & Feb. 2        & Linear model selection                                                 & Ch. 6 - 6.3 ISLR                                              & Ch. 6 ISLR                                                                      &                         &                      &                                                                                                                            \\
-\multirow{2}{*}{\textbf{Week 6}}                     & Feb. 7        & Regularization                                                         & Ch. 6.4 - 6.5 ISLR                                            & Ch. 5 ESL                                                                       & \multirow{2}{*}{Lab 6}  &                      & \multirow{8}{*}{\begin{tabular}[c]{@{}c@{}}Run models\\ \\ Write up results\\ \\ Work on draft \\ of paper\end{tabular}}   \\
-                                                     & Feb. 9        & Beyond linearity                                                       & Ch. 7 ISLR                                                    & \begin{tabular}[c]{@{}l@{}}Ch. 9.1,\\ 9.3 - 9.4 ESL\end{tabular}                &                         & Homework 3 Due       &                                                                                                                            \\
-\multirow{2}{*}{\textbf{Week 7}}                     & Feb. 14       & Decision trees                                                         & Ch. 8.1 ISLR                                                  & Ch. 9.2 ESL                                                                     & \multirow{2}{*}{Lab 7}  & Quiz 3               &                                                                                                                            \\
-                                                     & Feb. 16       & Tree-based methods                                                     & \begin{tabular}[c]{@{}l@{}}Ch. 8.2 - 8.3\\ ISLR\end{tabular}  & Ch. 10 ESL                                                                      &                         &                      &                                                                                                                            \\
-\multirow{2}{*}{\textbf{Week 8}}                     & Feb. 21       & K-means                                                                & \multirow{2}{*}{Ch. 12.4 ISLR}                                & \multirow{2}{*}{\begin{tabular}[c]{@{}l@{}}Ch. 14.1 - \\ 14.3 ESL\end{tabular}} & \multirow{2}{*}{Lab 8}  &                      &                                                                                                                            \\
-                                                     & Feb. 23       & Hierarchical clustering                                                &                                                               &                                                                                 &                         & Homework 4 Due       &                                                                                                                            \\
-\multirow{2}{*}{\textbf{Week 9}}                     & Feb. 28       & PCA                                                                    & Ch. 12.2 ISLR                                                 & \begin{tabular}[c]{@{}l@{}}Ch. 14.5 \& \\ 18.6 ESL\end{tabular}                 & \multirow{2}{*}{Lab 9}  & Quiz 4               &                                                                                                                            \\
-                                                     & Mar. 2        & SVM (I)                                                                & \multirow{2}{*}{Ch. 9 ISLR}                                   & \multirow{2}{*}{Ch. 12 ESL}                                                     &                         &                      &                                                                                                                            \\
-\multirow{2}{*}{\textbf{Week 10}}                    & Mar. 7        & SVM (II)                                                               &                                                               &                                                                                 & \multirow{2}{*}{Lab 10} &                      & \multirow{2}{*}{\begin{tabular}[c]{@{}c@{}}Make edits\\ \\ Begin final draft\end{tabular}}                                 \\
-                                                     & Mar. 9        & Neural networks                                                        & Ch. 10 ISLR                                                   & Ch. 11 ESL                                                                      &                         &                      &                                                                                                                            \\ \bottomrule
+\begin{tabular}{|c|l|l|c|c|c|}
+\hline
+\textbf{Week} & \multicolumn{1}{c|}{\textbf{Date}} & \multicolumn{1}{c|}{\textbf{Topic}} & \textbf{Reading} & \textbf{Assignments} & \textbf{Final Project Stage} \\ \hline
+\multirow{2}{*}{\textbf{Week 1}} & Mar. 29 & \begin{tabular}[c]{@{}l@{}}Introduction \&\\ basics of ML\end{tabular} & Ch 1 ISLR \& ESL & \multirow{2}{*}{Homework 1} & \multirow{2}{*}{\begin{tabular}[c]{@{}c@{}}Decide on topic\\ \\ and locate data \\ set(s)\end{tabular}} \\ \cline{2-4}
+ & Mar. 31 & Exploratory data analysis &  &  &  \\ \hline
+\multirow{2}{*}{\textbf{Week 2}} & Apr. 5 & Bias-variance tradeoff & Ch. 2 ISLR \& ESL & \multirow{2}{*}{Homework 2} & \multirow{4}{*}{Load and tidy data} \\ \cline{2-4}
+ & Apr. 7 & Linear regression & Ch. 3 ISLR \& ESL &  &  \\ \cline{1-5}
+\multirow{2}{*}{\textbf{Week 3}} & Apr. 12 & Logistic regression & Ch. 4 ISLR \& ESL & \multirow{2}{*}{Homework 3} &  \\ \cline{2-4}
+ & Apr. 14 & More on linear \& logistic &  &  &  \\ \hline
+\multirow{2}{*}{\textbf{Week 4}} & Apr. 19 & Resampling methods & Ch. 5 ISLR, 7 ESL & \multirow{2}{*}{Homework 4} & \multirow{4}{*}{\begin{tabular}[c]{@{}c@{}}Run and write up descriptive\\ analyses\end{tabular}} \\ \cline{2-4}
+ & Apr. 21 & Discriminant analysis & Ch. 4 ISLR \& ESL &  &  \\ \cline{1-5}
+\multirow{2}{*}{\textbf{Week 5}} & Apr. 26 & Discriminant analysis cont. &  & \multirow{2}{*}{Homework 5} &  \\ \cline{2-4}
+ & Apr. 28 & Linear model selection & Ch. 6 ISLR \& ESL &  &  \\ \hline
+\multirow{2}{*}{\textbf{Week 6}} & May 3 & Regularization & Ch. 5 ESL & \multirow{2}{*}{Homework 6} & \multirow{8}{*}{\begin{tabular}[c]{@{}c@{}}Run models\\ \\ \\ Write up results\\ \\ Work on draft \\ of paper\end{tabular}} \\ \cline{2-4}
+ & May 5 & Beyond linearity & Ch. 7 ISLR, 9 ESL &  &  \\ \cline{1-5}
+\multirow{2}{*}{\textbf{Week 7}} & May 10 & Decision trees & Ch. 8.1 ISLR & \multirow{2}{*}{Homework 7} &  \\ \cline{2-4}
+ & May 12 & Tree-based methods & Ch. 8.2 - 8.3 ISLR, 10 ESL &  &  \\ \cline{1-5}
+\multirow{2}{*}{\textbf{Week 8}} & May 17 & K-means & Ch. 12.4 ISLR, 14 ESL & \multirow{2}{*}{Homework 8} &  \\ \cline{2-4}
+ & May 19 & Hierarchical clustering &  &  &  \\ \cline{1-5}
+\multirow{2}{*}{\textbf{Week 9}} & May 24 & PCA &  & \multirow{2}{*}{Homework 9} &  \\ \cline{2-4}
+ & May 26 & SVM (I) & Ch. 9 ISLR, 12 ESL &  &  \\ \hline
+\multirow{2}{*}{\textbf{Week 10}} & May 31 & SVM (II) &  & \multirow{2}{*}{} & \multirow{2}{*}{\begin{tabular}[c]{@{}c@{}}Make edits\\ \\ Begin final draft\end{tabular}} \\ \cline{2-4}
+ & June 2 & Neural networks & Ch. 10 ISLR, 11 ESL &  &  \\ \hline
+ & June 6 &  &  & Final Project Due &  \\ \hline
 \end{tabular}%
 }
 \end{table}
-\end{landscape}
 
 \subsection*{Time Commitment}
 \textsc{The course} is 4 credit units; each credit unit corresponds to an approximate time commitment of 3 hours. You should expect to allocate 12 hours per week to the course. If you find yourself spending considerably more time on the course on a regular basis, please let the instructor or TAs know so that we can help you balance the workload.
