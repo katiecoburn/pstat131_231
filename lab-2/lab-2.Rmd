@@ -1,7 +1,6 @@
 ---
 title: "Lab 2"
 author: "PSTAT 131/231"
-date: "4/3/2022"
 output:
     html_document:
       toc: true
