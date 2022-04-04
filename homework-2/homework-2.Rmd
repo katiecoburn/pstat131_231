@@ -1,0 +1,12 @@
+---
+title: "Homework 2"
+author: "PSTAT 131/231"
+date: "4/3/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE,
+                      warning = FALSE)
+```
+

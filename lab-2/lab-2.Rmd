@@ -1,0 +1,270 @@
+---
+title: "Lab 2"
+author: "PSTAT 131/231"
+date: "4/3/2022"
+output:
+    html_document:
+      toc: true
+      toc_float: true
+      code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE,
+                      warning = FALSE)
+```
+
+## Follow-up to Setup
+
+First, your TA(s) will check in and make sure that everyone has been able to set up R, RStudio, and GitHub correctly, and to submit their first homework assignment.
+
+Remember: Your submissions should consist of a link to a **public** GitHub repository.
+
+## Exploratory Data Analysis
+
+The first section of this lab will guide you through practicing exploratory data analysis on the dataset `diamonds` (contained in the `ggplot2` package).
+
+Make sure to load the required packages! See code below. We also load a couple other packages here for use later on.
+
+```{r}
+library(ggplot2)
+library(tidyverse)
+library(tidymodels)
+library(corrplot)
+library(ggthemes)
+tidymodels_prefer()
+```
+
+### Diamonds
+
+We'll start with the `diamonds` data set. First, let's take a look at the first few lines of it, to get a feel for it:
+
+```{r}
+diamonds %>% 
+  head()
+```
+
+Think about which of these variables we might want to predict with a machine learning model. `price` makes intuitive sense; it's not something we can simply directly measure from a diamond, and we would likely be very interested in knowing how much a given diamond is worth.
+
+#### Activities:
+
+- How many observations are there in `diamonds`?
+- How many variables? Of these, how many are features we could use for predicting `price`?
+
+Run `?diamonds` and look at the variable definitions.
+
+First, let's make a correlation matrix to see which continuous variables are correlated with `price`. See example code below:
+
+```{r}
+diamonds %>% 
+  select(is.numeric) %>% 
+  cor() %>% 
+  corrplot(type = 'lower', diag = FALSE, 
+           method = 'color')
+```
+
+Take a moment and look at the arguments in the `corrplot()` function. What does each one do? What happens if you change `diag` to `TRUE` and `method` to `'square'`?
+
+#### Activities:
+
+- Which features are positively correlated with `price`? Do these make sense?
+- Are any features negatively correlated with `price`?
+- Which features are correlated with *each other*? Why do you think this might be?
+
+Let's make a boxplot of the distribution of `price` per level of `cut` and `color`, to see if there appears to be a relationship between it and these predictors.
+
+```{r}
+diamonds %>% 
+  ggplot(aes(x = price, y = reorder(cut, price), fill = color)) + 
+  geom_boxplot() +
+  labs(y = "Cut", x = "Price") +
+  theme_bw()
+```
+
+#### Activities:
+
+- What do you learn from this plot about the relationship between `price`, `cut`, and `color`?
+
+- Refer back to the definitions of the variables in `?diamonds`. Does anything you learned surprise you?
+
+Since `J` is the worst color for diamonds, why do you think they tend to cost more?
+
+Let's take a look at the relationship between `color` and `carat` to explore further. Remember from the correlation plot that `carat` is highly positively correlated with `price`.
+
+```{r}
+diamonds %>% 
+  ggplot(aes(x = carat, y = reorder(color, carat))) + 
+  geom_boxplot() +
+  theme_bw() +
+  labs(x = "Carat", y = "Color")
+```
+
+#### Activities:
+
+- Explain why lower-quality colors tend to cost more.
+
+Now we'll assess the distribution of our outcome variable `price`. Let's make a histogram:
+
+```{r}
+diamonds %>% 
+  ggplot(aes(x = price)) +
+  geom_histogram(bins = 60) +
+  theme_bw()
+```
+
+Notice that we increased the number of bins here; this allows us to get a more fine-grained picture of the distribution. `price` is positively skewed, meaning that much of the mass of its distribution is at the lower end, with a long tail to the right. Most diamonds in the data set are worth less than $\$10,000$.
+
+#### Activities:
+
+- Create a single plot to visualize the relationship between `cut`, `carat`, and `price`.
+
+## Data Splitting
+
+Now we're going to walk through the process of splitting the `diamonds` data set into two, a training set and a test set. Note that in the future, after we discuss the concept of resampling, we'll use a resampling technique called cross-validation, but for now, we'll work with the entire training set. (This approach is also known as a "validation set" approach.)
+
+We also could have performed this split prior to doing exploratory data analysis, and in future we'll split data first. That's arguably better practice because it means we will have never encountered the test observations before we fit a final model to them.
+
+The textbook(s) describe a way to split data using base R functions, but `tidymodels` makes the process a little easier.
+
+We set a seed first because the splitting process is random. If we don't set a seed, each time we re-run the code we'll get a new random split, and the results will not be identical.
+
+In general, set a seed to whatever number you like. People often use birthdates, anniversaries, or lucky numbers, etc. Just make sure you remember the number, because you'll need to set the seed to that number to reproduce your split in future.
+
+```{r}
+set.seed(3435)
+
+diamonds_split <- initial_split(diamonds, prop = 0.80,
+                                strata = price)
+diamonds_train <- training(diamonds_split)
+diamonds_test <- testing(diamonds_split)
+```
+
+#### Activities:
+
+- How many observations are now in the training and testing sets, respectively? Report the exact number, not proportion.
+
+- What do you think the `strata = price` argument does? Take a guess, then use `?initial_split` to verify.
+
+## Linear Regression
+
+### Creating a Recipe
+
+You'll notice that the textbooks use the `lm()` function to fit a linear regression. The `tidymodels` framework, however, has its own structure and flow, which is designed to work with multiple different machine learning models and packages seamlessly.
+
+To fit any model with `tidymodels`, the first step is to create a recipe. The structure of this recipe is similar to that of `lm()`; the outcome is listed first, then the features are added:
+
+```{r}
+simple_diamonds_recipe <-
+  recipe(price ~ ., data = diamonds_train)
+```
+
+Note that `.` is a placeholder for "all other variables." If we call the recipe object now, we can see some information:
+
+```{r}
+simple_diamonds_recipe
+```
+
+More specifically, we see that there are 9 predictors. 
+
+We should dummy-code all categorical predictors. We can do that easily with `step` functions:
+
+```{r}
+diamonds_recipe <- recipe(price ~ ., data = diamonds_train) %>% 
+  step_dummy(all_nominal_predictors())
+```
+
+Note that we haven't specified what type of model we'll be fitting yet. The other beauty of the recipe is that it can then be directly given to one of many machine learning model "engines."
+
+#### Activities:
+
+- Use the Internet to find documentation about the possible `step` functions. Name three `step` functions that weren't used here and describe what they do.
+
+Next, we can specify the model engine that we want to fit:
+
+```{r}
+lm_model <- linear_reg() %>% 
+  set_engine("lm")
+```
+
+We set up a workflow. This step might seem unnecessary now, with only one model and one recipe, but it can make life easier when you are trying out a series of models or several different recipes later on.
+
+```{r}
+lm_wflow <- workflow() %>% 
+  add_model(lm_model) %>% 
+  add_recipe(diamonds_recipe)
+```
+
+Finally, we can fit the linear model to the training set:
+
+```{r}
+lm_fit <- fit(lm_wflow, diamonds_train)
+```
+
+We can view the model results:
+
+```{r}
+lm_fit %>% 
+  # This returns the parsnip object:
+  extract_fit_parsnip() %>% 
+  # Now tidy the linear model object:
+  tidy()
+```
+
+#### Activities:
+
+- Explain what the intercept represents. 
+
+- Describe the effect of `carat`. Is it a significant predictor of `price`? Holding everything else constant, what is the effect on `price` of a one-unit increase in `carat`?
+
+Finally, we can calculate the **training** root mean squared error (RMSE).
+
+The following code generates predicted values for `price` for each observation in the training set:
+
+```{r}
+diamond_train_res <- predict(lm_fit, new_data = diamonds_train %>% select(-price))
+diamond_train_res %>% 
+  head()
+```
+
+Now we attach a column with the actual observed `price` observations:
+
+```{r}
+diamond_train_res <- bind_cols(diamond_train_res, diamonds_train %>% select(price))
+diamond_train_res %>% 
+  head()
+```
+
+We might be interested in a plot of predicted values vs. actual values:
+
+```{r}
+diamond_train_res %>% 
+  ggplot(aes(x = .pred, y = price)) +
+  geom_point(alpha = 0.2) +
+  geom_abline(lty = 2) + 
+  theme_bw() +
+  coord_obs_pred()
+```
+
+It's fairly clear that the model didn't do very well. If it predicted every observation accurately, the dots would form a straight line. We also have predicted some negative values for price, and once the actual price is approximately over $\$5,000$, the model does a pretty poor job.
+
+The odds are that a linear model is simply not the best tool for this machine learning task. It is likely not an accurate representation of `f()`.
+
+In future labs, we'll try out different models and compare them. For now, let's get the linear model's RMSE on the training data as a baseline.
+
+```{r}
+rmse(diamond_train_res, truth = price, estimate = .pred)
+```
+
+We can create and view a "metric set" of RMSE, MSE, and $R^2$ as shown:
+
+```{r}
+diamond_metrics <- metric_set(rmse, rsq, mae)
+diamond_metrics(diamond_train_res, truth = price, 
+                estimate = .pred)
+```
+
+## Resources
+
+The free book [Tidy Modeling with R](https://www.tmwr.org/) is strongly recommended.
+
+You can view all the ISLR textbook code written with `tidymodels` [here](https://emilhvitfeldt.github.io/ISLR-tidymodels-labs/index.html).
