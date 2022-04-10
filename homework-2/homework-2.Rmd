@@ -50,7 +50,7 @@ Steps for your recipe:
     -   `type` and `shucked_weight`,
     -   `longest_shell` and `diameter`,
     -   `shucked_weight` and `shell_weight`
-
+    
 3.  center all predictors, and
 
 4.  scale all predictors.
