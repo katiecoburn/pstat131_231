@@ -1,0 +1,18 @@
+"0","augment(nb_fit, new_data = smarket_train) %>%
+  conf_mat(truth = Direction, estimate = .pred_class) 
+"
+"1","          Truth
+"
+"1","Prediction"
+"1"," Down"
+"1","  Up"
+"1","
+      Down"
+"1","  149"
+"1"," 111"
+"1","
+      Up  "
+"1","  332"
+"1"," 407"
+"1","
+"

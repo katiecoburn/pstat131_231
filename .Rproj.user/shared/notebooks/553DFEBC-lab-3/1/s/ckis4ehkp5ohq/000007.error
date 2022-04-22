@@ -1,0 +1,1 @@
+{"frames":[{"func":"fit(qda_wkflow, smarket_train)","file":"","line_number":0,"end_line_number":0,"character_number":0,"end_character_number":0}],"message":"Error in fit(qda_wkflow, smarket_train) : object 'qda_wkflow' not found\n"}

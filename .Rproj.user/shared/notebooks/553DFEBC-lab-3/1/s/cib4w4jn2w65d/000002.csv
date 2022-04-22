@@ -1,0 +1,18 @@
+"0","augment(qda_fit, new_data = smarket_train) %>%
+  conf_mat(truth = Direction, estimate = .pred_class) 
+"
+"1","          Truth
+"
+"1","Prediction"
+"1"," Down"
+"1","  Up"
+"1","
+      Down"
+"1","  178"
+"1"," 142"
+"1","
+      Up  "
+"1","  303"
+"1"," 376"
+"1","
+"

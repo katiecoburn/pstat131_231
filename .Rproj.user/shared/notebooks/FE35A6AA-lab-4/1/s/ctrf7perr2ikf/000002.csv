@@ -1,0 +1,11 @@
+"0","Auto <- tibble(Auto)
+"
+"2","Error: [conflicted] [34m`Auto`[39m found in 2 packages.
+Either pick the one you want with `::` 
+* [34mISLR2::Auto[39m
+* [34mISLR::Auto[39m
+Or declare a preference with `conflict_prefer()`
+* conflict_prefer(""Auto"", ""ISLR2"")
+* conflict_prefer(""Auto"", ""ISLR"")
+[90mRun `rlang::last_error()` to see where the error occurred.[39m
+"

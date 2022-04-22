@@ -1,0 +1,6 @@
+"0","simple_diamonds_recipe <-
+  recipe(diamonds ~ ., data = diamonds_train)
+"
+"2","Error in model.frame.default(formula, data[1, ]) : 
+  invalid type (list) for variable 'diamonds'
+"

@@ -1,0 +1,4 @@
+"0","qda_fit <- fit(qda_wkflow, smarket_train)
+"
+"2","Error in fit(qda_wkflow, smarket_train) : object 'qda_wkflow' not found
+"
