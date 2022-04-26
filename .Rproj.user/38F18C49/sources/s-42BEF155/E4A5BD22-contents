@@ -1,0 +1,363 @@
+---
+title: "Homework 1 Solutions"
+author: "Katie Coburn"
+subtitle: PSTAT 131/231
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+    code_folding: hide
+    number_sections: yes
+  pdf_document:
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(ISLR)
+library(tidymodels)
+library(ggthemes)
+library(naniar)
+```
+
+You should format your homework and project submissions for this course in a way similar to the formatting of this document; in other words, use section headings, include a table of contents, and write in complete sentences. Use code folding so that graders can view your code by expanding sections, but can hide your code to read text. It's also a good idea to set the arguments `'message=FALSE'` and `'warning=FALSE'` in each code chunk, and to load all relevant packages at the beginning of the document.
+
+The code itself in these solutions, however, is often only one of many possible ways to answer the question(s) and solve the problem(s). If your solution differs, you will still receive credit as long as you obtained the correct result(s).
+
+# Data import
+
+This code imports the data for this homework assignment and takes a first look at it:
+
+```{r, message=FALSE, warning=FALSE}
+algae <- read_table("algaeBloom.txt",
+                     col_names = c('season', 'size', 'speed', 
+                                   'mxPH', 'mnO2', 'Cl', 
+                                   'NO3', 'NH4', 'oPO4', 'PO4',
+                                   'Chla', 'a1', 'a2', 'a3',
+                                   'a4', 'a5', 'a6', 'a7'), 
+                     na = "XXXXXXX")
+glimpse(algae)
+```
+
+# Descriptive summary statistics
+
+## a.
+
+Let's count the number of observations in each size category:
+
+```{r, message=FALSE, warning=FALSE}
+algae %>% 
+  group_by(size) %>% 
+  summarise(n())
+```
+
+We could also make a bar chart of the `size` variable. Note that I've changed the look of the ggplot graphics by using the `ggthemes` package. This isn't required, but is a matter of personal preference.
+
+```{r, message=FALSE, warning=FALSE}
+algae %>% 
+  ggplot(aes(x = size)) + geom_bar() +
+  theme_bw()
+```
+
+Although this may seem repetitive or unnecessary, it's always a good idea to describe the patterns you see in text for readers.
+
+Here, we notice that most observations in this dataset come from `medium`-size rivers -- 84, to be specific. The next largest number of observations are from `small`-size rivers (71), and finally, the fewest observations are from `large`-size (45).
+
+## b.
+
+Are there missing values? Let's assess. The `naniar` package is a useful tool for visualizing missingness; I recommend looking into it. You can find a good tutorial here: <https://cran.r-project.org/web/packages/naniar/vignettes/getting-started-w-naniar.html>
+
+```{r, message=FALSE, warning=FALSE}
+vis_miss(algae)
+```
+
+A little bit of the overall dataset is missing -- about 0.9%. Excluding the rows with missing data shouldn't pose too much of a problem since there is less than one percent missing. By variable, `Chla` and `Cl`, or chloride and chlorophyll, are missing the most -- 6% and 5%, respectively.
+
+We can drop all rows with any missing data with this code. Note that you could also use `na.rm = TRUE` in functions of the data.
+
+```{r, message=FALSE, warning=FALSE}
+algae_nomis <- 
+  algae %>% 
+  drop_na()
+```
+
+We can calculate the mean and variance of each chemical with the following:
+
+```{r, message=FALSE, warning=FALSE}
+algae_nomis %>% 
+  summarise_at(vars(mnO2:Chla), list(mean = mean, var = var),
+               ) %>% 
+  pivot_longer(everything(),
+               names_to = "key", 
+               values_to = "count") %>% 
+  separate(key, into = c("Chemical", "Function")) %>% 
+  spread(Function, count) %>% 
+  rename("Mean" = mean, "Variance" = var) %>% 
+  mutate(Mean = sprintf("%0.2f", Mean),
+         Variance = sprintf("%0.2f", Variance))
+```
+
+Note the use of a little extra code to improve the table -- replacing `fn1` and `fn2` with function names, etc. I also included the `sprintf()` function to control the number of decimal places printed, for readability. I encourage you to run this code line-by-line so you can explore what it does.
+
+Your answer to the last part may vary, but should touch on the following points:
+
+-   The mean varies widely, from about 548 to 3
+-   The variance is much larger for some chemicals than others
+-   For some chemicals, the variance is thousands of times larger than the mean
+
+## c.
+
+```{r, message=FALSE, warning=FALSE}
+algae_nomis %>% 
+  summarise_at(vars(mnO2:Chla), list(median = median, mad = mad),
+               ) %>% 
+  pivot_longer(everything(),
+               names_to = "key", 
+               values_to = "count") %>% 
+  separate(key, into = c("Chemical", "Function")) %>% 
+  spread(Function, count) %>% 
+  rename("Median" = median, "MAD" = mad) %>% 
+  select(Chemical, Median, MAD) %>% 
+  mutate(Median = sprintf("%0.2f", Median),
+         MAD = sprintf("%0.2f", MAD))
+```
+
+Again, your answer may vary, but should touch on at least some of the following:
+
+-   For most of these chemicals, the median is smaller than the mean, indicating some degree of positive skew
+-   As expected, median and MAD are much less affected by extreme values
+-   NH4 and PO4, in particular, must have some very extreme values
+
+# Data visualization
+
+## a.
+
+```{r, message=FALSE, warning=FALSE}
+algae_nomis %>% 
+  ggplot(aes(x = mnO2)) +
+  geom_histogram(aes(y = stat(density))) +
+  theme_bw() +
+  ylab("Density") +
+  ggtitle("Histogram of mnO2")
+```
+
+There is some degree of skew. For this chemical, unlike some of the others, there's actually a bit of negative skew.
+
+## b.
+
+```{r, message=FALSE, warning=FALSE}
+algae_nomis %>% 
+  ggplot(aes(x = mnO2)) +
+  geom_histogram(aes(y = stat(density))) +
+  theme_bw() +
+  ylab("Density") +
+  ggtitle("Histogram of mnO2") +
+  geom_density() +
+  geom_rug()
+```
+
+## c.
+
+```{r, message=FALSE, warning=FALSE}
+algae_nomis %>% 
+  ggplot(aes(x = a3)) +
+  geom_boxplot(aes(color = size)) +
+  theme_bw() +
+  ggtitle("A Conditioned Boxplot of Algal a3")
+```
+
+Answers may vary, but should touch on some of the following:
+
+-   The median value of algal a3 is fairly similar across river size
+-   The spread of algal a3 values is the largest for medium-sized rivers, then large rivers, then small rivers
+-   Small rivers have the largest outliers
+
+# Dealing with missing values
+
+## a.
+
+We've already discussed this a bit earlier, but about 0.09% of rows contain some missing values, or 16 rows (the difference in size between our original algae data set and the version after dropping missing rows).
+
+To see the number of missing values broken down by variable:
+
+```{r, message=FALSE, warning=FALSE}
+gg_miss_var(algae) + theme_bw()
+```
+
+## b.
+
+You can use multiple methods to filter out rows with missing data from the algae dataset. We actually did so earlier with `drop_na()`. Any method is fine, as long as it does the job.
+
+To use `filter()`:
+
+```{r, message=FALSE, warning=FALSE}
+algae.del <- algae %>% 
+  filter(complete.cases(.))
+```
+
+There are 184 rows that have no missing values.
+
+# Bias-variance tradeoff
+
+## a.
+
+$$
+Var(\hat{f}(\textbf{x}_0))
+$$
+
+and
+
+$$
+[Bias(\hat{f}(\textbf{x}_0)]^{2}
+$$
+
+represent the reducible error.
+
+$$
+Var(\epsilon)
+$$
+
+represents the irreducible error.
+
+## b.
+
+Your answer here may vary. Essentially, point out that even if the reducible error is reduced all the way to zero, the bias-variance tradeoff still contains the irreducible error:
+
+$$
+E[(y_0 - \hat{f}(\textbf{x}_0))^2]=0+0+Var(\epsilon)
+$$
+
+or, for short:
+
+$$
+E[(y_0 - \hat{f}(\textbf{x}_0))^2]=Var(\epsilon)
+$$
+
+# 231 Only
+
+### 5.
+
+$$
+E[(y_0 - \hat{f}(\textbf{x}_0))^2]=Var(\hat{f}(\textbf{x}_0))+[Bias(\hat{f}(\textbf{x}_0)]^{2}+Var(\epsilon)
+$$
+
+We start by expanding the left-hand side of the equation to demonstrate that it is equal to the right-hand side. Since we know that $y_{0} = f(x)+\epsilon$:$$
+E[(y_0 - \hat{f}(\textbf{x}_0))^2]=E[(f(x) + \epsilon - \hat{f}(\textbf{x}_0))^2]
+$$
+
+Expanding this polynomial, we get:
+
+$$
+= E[(f(\textbf{x}_0)-\hat{f}(\textbf{x}_0))^2] + E[\epsilon^2]+2E[(f(\textbf{x}_0)-\hat{f}(\textbf{x}_0))\epsilon]
+$$
+
+or:
+
+$$
+=E[(f(\textbf{x}_0)-\hat{f}(\textbf{x}_0))^2]+Var(\epsilon)
+$$
+
+We follow the hint by adding and subtracting $E[\hat{f}(\textbf{x}_0)]$ to the first term:
+
+$$
+=E[(f(\textbf{x}_0)+E[\hat{f}(\textbf{x}_0)]-E[\hat{f}(\textbf{x}_0)]-\hat{f}(\textbf{x}_0))^2]+Var(\epsilon)
+$$
+
+Then we can expand this polynomial:
+
+$$
+=E[(E[\hat{f}(\textbf{x}_0)]-f(\textbf{x}_0))^{2}]+E[(\hat{f}(\textbf{x}_0)-E[\hat{f}(\textbf{x}_0)])^2]-2E[(f(\textbf{x}_0)-E[\hat{f}(\textbf{x}_0)])](E[\hat{f}(\textbf{x}_0)]-E[\hat{f}(\textbf{x}_0)]) + Var(\epsilon)
+$$
+
+The unwieldy last term cancels out and:
+
+$$
+=(E[\hat{f}(\textbf{x}_0)]-f(\textbf{x}_0))^2+E[(\hat{f}(\textbf{x}_0)-E[\hat{f}(\textbf{x}_0)])^2]+Var(\epsilon)
+$$
+
+Then we just have to note that the first two terms here are the bias and variance, respectively, and:
+
+$$
+E[(y_0 - \hat{f}(\textbf{x}_0))^2]=bias(\hat{f}(\textbf{x}_0))^2+Var(\hat{f}(\textbf{x}_0))+Var(\epsilon)
+$$
+
+### 6.
+
+$$
+d(x,y) = \| x-y \|_{2}
+$$
+
+refers to the Euclidean norm in mathematics. So we need to show that:
+
+$$
+d(x,y) = \sqrt{(x_1-y_1)^2+...+(x_p-y_p)^2}
+$$
+
+satisfies the triangle inequality and the properties of positivity and symmetry.
+
+The number under the square root will be greater than zero in all cases except where $x = y$. Therefore, the Euclidean norm satisfies the property of positivity.
+
+For values of $x$ and $y$,
+
+$$
+(x_i-y_i)^2 = (y_i - x_i)^2
+$$
+
+Therefore, the Euclidean norm also satisfies the property of symmetry, because $d(x, y) = d(y, x)$.
+
+There are a number of ways to show that it satisfies the triangle inequality. One of the simplest is probably to use the Cauchy-Schwarz inequality. So for three vectors, $x$, $y$, and $z$, each of length $p$, we want to show that $d(x, z) \le d(x, y) + d(y, z)$.
+
+$d(x, z) \le \sqrt{(x_1-z_1)^2+...+(x_p-z_p)^2}$, so $d(x, z) = | | x - z | |$.
+
+We can add and subtract $y$, so:
+
+$$
+d(x, z) \le | | x - y + y - z | |
+$$
+
+Then we can separate this into:
+
+$$
+d(x, z) \le | | x - y | | + | | y - z | |
+$$
+
+Therefore:
+
+$$
+d(x, z) \le d(x, y) + d(y, z)
+$$
+
+Finally, we take a look at $d(x, y) = | | x - y | |_{\infty}$. This refers to the maximum norm. So we need to show that:
+
+$$
+d(x, y) = max(| x_1 - y_1 |, ..., | x_p - y_p |)
+$$
+
+In other words, we need to show that the maximum of the absolute values of the differences between x and y satisfy these three qualifications.
+
+Since $|x - y| \le 0$ and $|x - y| = 0$ only if $x = y$, $d(x,y)$ satisfies positivity.
+
+Since $|x - y| = |y - x|$, $d(x,y)$ satisfies symmetry.
+
+Lastly, the triangle inequality. For any three real-numbered vectors $x$, $y$, and $z$, let $j$ be the coordinate at which $x$ and $z$ differ the most. Then we have $d(x, z) = |x_j - z_j|$.
+
+We can add and subtract $y$ to see that:
+
+$$
+d(x, z) \le |x_j - y_j| + |y_j - z_j|
+$$
+
+And because we've set $j$ as the coordinate with the greatest difference, the above becomes:
+
+$$
+d(x, z) \le max(|x_i - y_i|) + max(|y_i - z_i|)
+$$
+
+And this is just:
+
+$$
+d(x, z) \le d(x, y) + d(y, z)
+$$
+
+so the maximum norm also satisfies the triangle inequality!
