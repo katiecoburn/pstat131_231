@@ -1,0 +1,369 @@
+---
+title: "Lab 3: Classification"
+author: "PSTAT 131/231"
+output:
+    html_document:
+      toc: true
+      toc_float: true
+      code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE,
+                      warning = FALSE)
+```
+
+## Introduction
+
+This lab will be our first experience with classification models. These models differ from the regression model we saw in the last chapter by the fact that the response variable is a qualitative variable instead of a continuous variable. This chapter will use ['parsnip'](https://www.tidymodels.org/start/models/) for model fitting and ['recipes and workflows'](https://www.tidymodels.org/start/recipes/) to perform the transformations.
+
+### Loading Packages
+
+We load `tidymodels` for modeling functions, `ISLR` and `ISLR2` for data sets, `discrim` to give us access to discriminant analysis models such as LDA and QDA, as well as the Naive Bayes model, and `poissonreg` for Poisson regression. Finally, we load `corrr` for aid in visualizing correlation matrices.
+
+```{r}
+library(tidymodels)
+library(ISLR) # For the Smarket data set
+library(ISLR2) # For the Bikeshare data set
+library(discrim)
+library(poissonreg)
+library(corrr)
+library(klaR) # for naive bayes
+tidymodels_prefer()
+```
+
+### Data
+
+We will be examining the `Smarket` data set for this lab. It contains a number of numeric variables, plus a variable called `Direction` which has two labels, "Up" and "Down". Before we go on to modeling, we'll explore the data a little, at least to look at possible correlations between the variables.
+
+#### Activities
+
+- Access the help page for `Smarket`. What does the `Direction` variable represent? What predictors do you think might be correlated with it?
+
+To look at correlations among the continuous variables, we will use the `corrr` package. The `correlate()` function will calculate the correlation matrix between all the variables that it is given. We choose to remove `Direction,` as it is not numeric. Then we pass the results to rplot() to visualize the correlation matrix.
+
+```{r}
+cor_Smarket <- Smarket %>%
+  select(-Direction) %>%
+  correlate()
+rplot(cor_Smarket)
+```
+
+#### Activities
+
+- What do you notice from this correlation matrix?
+- Do you need to worry about predictors being highly linearly correlated with each other?
+- Does this matrix tell you anything about relationships between predictors and the outcome?
+
+We can also use `ggplot` and the `geom_tile()` function to create a heatmap-style correlation plot, with a few more lines of code:
+
+```{r}
+cor_Smarket %>%
+  stretch() %>%
+  ggplot(aes(x, y, fill = r)) +
+  geom_tile() +
+  geom_text(aes(label = as.character(fashion(r))))
+```
+
+Notice that the upper and lower triangles of the matrix are identical; that's a common feature of correlation matrices. The grey squares represent the variances of the variables. Again, we see that only `Year` and `Volume` have much of any correlation with each other, and it's only about $0.55$.
+
+Let's investigate that correlation! Here's a plot of `Volume` by `Year`:
+
+```{r}
+ggplot(Smarket, aes(factor(Year), Volume)) +
+  geom_boxplot() + 
+  geom_jitter(alpha = 0.1) +
+  xlab("Year")
+```
+
+#### Activities
+
+- Describe the relationship between `Year` and `Volume`.
+
+Lastly, it's worth looking at the distribution of our outcome variable.
+
+```{r}
+Smarket %>% 
+  ggplot(aes(x = Direction)) +
+  geom_bar()
+```
+
+
+Now we'll split the data, stratifying on the outcome, `Direction`:
+
+```{r}
+set.seed(3435)
+
+smarket_split <- initial_split(Smarket, prop = 0.70,
+                                strata = Direction)
+smarket_train <- training(smarket_split)
+smarket_test <- testing(smarket_split)
+```
+
+## Logistic Regression
+
+### Creating a Recipe
+
+First, just as with our linear regression lab last week, we want to create a recipe to represent the model we'll be fitting.
+
+```{r}
+smarket_recipe <- recipe(Direction ~ Lag1 + Lag2 + Lag3 + Lag4 + 
+                           Lag5 + Volume, data = smarket_train)
+```
+
+### Specifying an Engine
+
+Then, again like last week, we specify the model type and engine:
+
+```{r}
+log_reg <- logistic_reg() %>% 
+  set_engine("glm") %>% 
+  set_mode("classification")
+```
+
+### Workflow
+
+We set up the workflow and fit the model to the training data:
+
+```{r}
+log_wkflow <- workflow() %>% 
+  add_model(log_reg) %>% 
+  add_recipe(smarket_recipe)
+
+log_fit <- fit(log_wkflow, smarket_train)
+```
+
+### Model Results
+
+We can view the results:
+
+```{r}
+log_fit %>% 
+  tidy()
+```
+
+#### Activities
+
+- Are any of the predictors statistically significant?
+
+### Assessing Model Performance
+
+We can use the model to generate probability predictions for the training data:
+
+```{r}
+predict(log_fit, new_data = smarket_train, type = "prob")
+```
+
+Each row represents the probability predicted by the model that a given observation belongs to a given class. Notice this is redundant, because one could be calculated directly from the other, but it's useful in multiclass situations.
+
+However, it's more useful to summarize the predicted values. We can use `augment()` to attach the predicted values to the daata, then generate a confusion matrix:
+
+```{r}
+augment(log_fit, new_data = smarket_train) %>%
+  conf_mat(truth = Direction, estimate = .pred_class)
+```
+
+Or we can create a visual representation of the confusion matrix:
+
+```{r}
+augment(log_fit, new_data = smarket_train) %>%
+  conf_mat(truth = Direction, estimate = .pred_class) %>%
+  autoplot(type = "heatmap")
+```
+
+#### Activities
+
+- What do you notice from the confusion matrix?
+- Does the model tend to overpredict one class or the other? If so, which one?
+- Do you think the model is doing well? Why or why not?
+
+Let's calculate the accuracy of this model, or the average number of correct predictions it made on the **training** data. This is the model's **training error rate**.
+
+```{r}
+log_reg_acc <- augment(log_fit, new_data = smarket_train) %>%
+  accuracy(truth = Direction, estimate = .pred_class)
+log_reg_acc
+```
+
+We will now go on to fit three more models to the **training** data: A linear discriminant analysis (LDA) model, a quadratic discriminant analysis (QDA) model, and a naive Bayes model.
+
+## LDA
+
+The beauty of `tidymodels` is that we only need to set up the recipe once. Then fitting any number of additional model classes can be done with only a few lines of code:
+
+```{r}
+lda_mod <- discrim_linear() %>% 
+  set_mode("classification") %>% 
+  set_engine("MASS")
+
+lda_wkflow <- workflow() %>% 
+  add_model(lda_mod) %>% 
+  add_recipe(smarket_recipe)
+
+lda_fit <- fit(lda_wkflow, smarket_train)
+```
+
+### Assessing Performance
+
+This can be done almost exactly the same way:
+
+```{r}
+predict(lda_fit, new_data = smarket_train, type = "prob")
+```
+
+We can view a confidence matrix and calculate accuracy on the **training data**:
+
+```{r}
+augment(lda_fit, new_data = smarket_train) %>%
+  conf_mat(truth = Direction, estimate = .pred_class) 
+```
+
+```{r}
+lda_acc <- augment(lda_fit, new_data = smarket_train) %>%
+  accuracy(truth = Direction, estimate = .pred_class)
+lda_acc
+```
+
+#### Activities
+
+- Compare the results of the LDA model to the results of the logistic regression model.
+
+## QDA
+
+Again, fitting any number of additional model classes can be done with only a few lines of code:
+
+```{r}
+qda_mod <- discrim_quad() %>% 
+  set_mode("classification") %>% 
+  set_engine("MASS")
+
+qda_wkflow <- workflow() %>% 
+  add_model(qda_mod) %>% 
+  add_recipe(smarket_recipe)
+
+qda_fit <- fit(qda_wkflow, smarket_train)
+```
+
+### Assessing Performance
+
+And again:
+
+```{r}
+predict(qda_fit, new_data = smarket_train, type = "prob")
+```
+
+We can view a confidence matrix and calculate accuracy on the **training data**:
+
+```{r}
+augment(qda_fit, new_data = smarket_train) %>%
+  conf_mat(truth = Direction, estimate = .pred_class) 
+```
+
+```{r}
+qda_acc <- augment(qda_fit, new_data = smarket_train) %>%
+  accuracy(truth = Direction, estimate = .pred_class)
+qda_acc
+```
+
+## Naive Bayes
+
+Finally, we'll fit a Naive Bayes model to the **training data**. For this, we will be using the `naive_bayes()` function to create the specification and set the `usekernel` argument to `FALSE`. This means that we are assuming that the predictors are drawn from Gaussian distributions.
+
+```{r}
+nb_mod <- naive_Bayes() %>% 
+  set_mode("classification") %>% 
+  set_engine("klaR") %>% 
+  set_args(usekernel = FALSE) 
+
+nb_wkflow <- workflow() %>% 
+  add_model(nb_mod) %>% 
+  add_recipe(smarket_recipe)
+
+nb_fit <- fit(nb_wkflow, smarket_train)
+```
+
+### Assessing Performance
+
+And again:
+
+```{r}
+predict(nb_fit, new_data = smarket_train, type = "prob")
+```
+
+We can view a confidence matrix and calculate accuracy on the **training data**:
+
+```{r}
+augment(nb_fit, new_data = smarket_train) %>%
+  conf_mat(truth = Direction, estimate = .pred_class) 
+```
+
+```{r}
+nb_acc <- augment(nb_fit, new_data = smarket_train) %>%
+  accuracy(truth = Direction, estimate = .pred_class)
+nb_acc
+```
+
+## Comparing Model Performance
+
+Now we can make a table of the accuracy rates from these four models to choose the model that produced the highest accuracy on the training data:
+
+```{r}
+accuracies <- c(log_reg_acc$.estimate, lda_acc$.estimate, 
+                nb_acc$.estimate, qda_acc$.estimate)
+models <- c("Logistic Regression", "LDA", "Naive Bayes", "QDA")
+results <- tibble(accuracies = accuracies, models = models)
+results %>% 
+  arrange(-accuracies)
+```
+
+#### Activities
+
+- Which model performed the best on the training data?
+- Which model would you choose? Why?
+
+## Fitting to Testing Data
+
+Since the Naive Bayes model performed slightly better, we'll go ahead and fit it to the testing data. In future weeks, we'll cover how to use cross-validation to try out different values for models' tuning parameters, but for now, this is a general overview of the process.
+
+```{r}
+predict(nb_fit, new_data = smarket_test, type = "prob")
+```
+
+We can view the confusion matrix on the **testing** data:
+
+```{r}
+augment(nb_fit, new_data = smarket_test) %>%
+  conf_mat(truth = Direction, estimate = .pred_class) 
+```
+
+We can also look at the **testing** accuracy. Here, we add two other metrics, sensitivity and specificity, out of curiosity:
+
+```{r}
+multi_metric <- metric_set(accuracy, sensitivity, specificity)
+
+augment(nb_fit, new_data = smarket_test) %>%
+  multi_metric(truth = Direction, estimate = .pred_class)
+```
+
+Finally, let's look at an ROC curve on the testing data:
+
+```{r}
+augment(nb_fit, new_data = smarket_test) %>%
+  roc_curve(Direction, .pred_Down) %>%
+  autoplot()
+```
+
+#### Activities
+
+- What do the sensitivity and specificity values mean? Interpret them in terms of the concepts and data.
+- How well did the model perform on the **testing** data?
+- Why do you think the model performed like it did?
+- Do you think we could have done the initial split differently? Is there anything about the structure of the data that could inform the training/testing split?
+
+## Resources
+
+The free book [Tidy Modeling with R](https://www.tmwr.org/) is strongly recommended.
+
+## Source
+
+Several parts of this lab come directly from the ["ISLR Tidymodels Labs"](https://emilhvitfeldt.github.io/ISLR-tidymodels-labs/classification.html). Credit to Emil Hvitfeldt for writing and maintaining the open-source book.
