@@ -28,13 +28,13 @@ Make sure you load the `tidyverse` and `tidymodels`!
 *Remember that you'll need to set a seed at the beginning of the document to reproduce your results.*
 
 ```{r}
+library(klaR) # for naive bayes
 library(tidyverse)
 library(tidymodels)
 library(corrplot)
 library(discrim)
 library(poissonreg)
 library(corrr)
-library(klaR) # for naive bayes
 tidymodels_prefer()
 
 set.seed(3435) # can be any number
@@ -175,21 +175,79 @@ qda_fit <- fit(qda_wkflow, titanic_train)
 
 **Repeat Question 5**, but this time specify a naive Bayes model for classification using the `"klaR"` engine. Set the `usekernel` argument to `FALSE`.
 
+```{r}
+nb_mod <- naive_Bayes() %>% 
+  set_mode("classification") %>% 
+  set_engine("klaR") %>% 
+  set_args(usekernel = FALSE) 
+
+nb_wkflow <- workflow() %>% 
+  add_model(nb_mod) %>% 
+  add_recipe(titanic_recipe)
+
+nb_fit <- fit(nb_wkflow, titanic_train)
+```
+
 ### Question 9
 
 Now you've fit four different models to your training data.
 
 Use `predict()` and `bind_cols()` to generate predictions using each of these 4 models and your **training** data. Then use the *accuracy* metric to assess the performance of each of the four models.
 
+```{r}
+log_acc <- predict(log_fit, new_data = titanic_train, type = "class") %>% 
+  bind_cols(titanic_train %>% select(survived)) %>% 
+  accuracy(truth = survived, estimate = .pred_class)
+lda_acc <- predict(lda_fit, new_data = titanic_train, type = "class") %>% 
+  bind_cols(titanic_train %>% select(survived)) %>% 
+  accuracy(truth = survived, estimate = .pred_class)
+qda_acc <- predict(qda_fit, new_data = titanic_train, type = "class") %>% 
+  bind_cols(titanic_train %>% select(survived)) %>% 
+  accuracy(truth = survived, estimate = .pred_class)
+nb_acc <- predict(nb_fit, new_data = titanic_train, type = "class") %>% 
+  bind_cols(titanic_train %>% select(survived)) %>% 
+  accuracy(truth = survived, estimate = .pred_class)
+
+results <- bind_rows(log_acc, lda_acc, qda_acc, nb_acc) %>% 
+  tibble() %>% mutate(model = c("Logistic", "LDA", "QDA", "NB")) %>% 
+  select(model, .estimate) %>% 
+  arrange(.estimate)
+
+results
+```
+
 Which model achieved the highest accuracy on the training data?
+
+*The LDA performed the best on the training data.*
 
 ### Question 10
 
 Fit the model with the highest training accuracy to the **testing** data. Report the accuracy of the model on the **testing** data.
 
+```{r}
+lda_test <- fit(lda_wkflow, titanic_test)
+predict(lda_test, new_data = titanic_test, type = "class") %>% 
+  bind_cols(titanic_test %>% select(survived)) %>% 
+  accuracy(truth = survived, estimate = .pred_class)
+```
+
 Again using the **testing** data, create a confusion matrix and visualize it. Plot an ROC curve and calculate the area under it (AUC).
 
+```{r}
+augment(lda_test, new_data = titanic_test) %>%
+  conf_mat(truth = survived, estimate = .pred_class) %>% 
+  autoplot(type = "heatmap")
+```
+
+```{r}
+augment(lda_test, new_data = titanic_test) %>%
+  roc_curve(survived, .pred_Yes) %>%
+  autoplot()
+```
+
 How did the model perform? Compare its training and testing accuracies. If the values differ, why do you think this is so?
+
+*The model actually did quite well, and its accuracy slightly increased on the testing data. This is likely because the model is relatively mechanistic, so it has lower variance.*
 
 ### Required for 231 Students
 
@@ -209,8 +267,46 @@ $$
 z(p)=ln\left(\frac{p}{1-p}\right)
 $$
 
+*To show that the inverse of the logistic function is the logit function, we can start with the logistic function:*
+
+$$
+P(z) = \frac{e^z}{1+e^z}
+$$
+
+*We'll set $P(z)=y$ for simplicity.*
+
+$$
+y+ye^z=e^z
+$$
+
+$$
+y=e^z-ye^z
+$$
+
+$$
+y=(1-y)e^z
+$$
+
+$$
+e^z=\frac{y}{1-y}
+$$
+
+$$
+ln(e^z)=ln(\frac{y}{1-y})
+$$
+
+$$
+z=ln(\frac{y}{1-y})
+$$
+
+$$
+z(p)=ln(\frac{p}{1-p})
+$$
+
 ### Question 12
 
 Assume that $z = \beta_0 + \beta_{1}x_{1}$ and $p = logistic(z)$. How do the odds of the outcome change if you increase $x_{1}$ by two? Demonstrate this.
 
 Assume now that $\beta_1$ is negative. What value does $p$ approach as $x_{1}$ approaches $\infty$? What value does $p$ approach as $x_{1}$ approaches $-\infty$?
+
+*If you increase $x_{1}$ by two, the odds of the outcome increase $e^{2\beta_{1}}$ times. If $\beta_{1}$ is negative, as $x_{1} \rightarrow \infty$, $\frac{p}{1-p}$ approaches $0$, and vice versa; as $x_{1} \rightarrow -\infty$, $\frac{p}{1-p}$ approaches $1$.*
