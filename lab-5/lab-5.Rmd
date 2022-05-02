@@ -1,0 +1,323 @@
+---
+title: "Lab 5: Regularization"
+author: "PSTAT 131/231"
+output:
+    html_document:
+      toc: true
+      toc_float: true
+      code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE,
+                      warning = FALSE)
+```
+
+## Introduction
+
+This lab will take a look at regularization models and hyperparameter tuning. These models are related to the models we saw in chapter 3 and 4, with the difference that they contain a regularization term. This chapter will use ['parsnip'](https://www.tidymodels.org/start/models/) for model fitting and ['recipes and workflows'](https://www.tidymodels.org/start/recipes/) to perform the transformations, and ['tune and dials'](https://www.tidymodels.org/start/tuning/) to tune the hyperparameters of the model.
+
+We will be using the `Hitters` data set from the `ISLR` package. We wish to predict the baseball players' `Salary` based on several different characteristics which are included in the data set. Since we wish to predict `Salary`, then we need to remove any missing data from that column. Otherwise, we won’t be able to run the models.
+
+Note that regularization -- ridge and lasso, etc. -- can be used for **both linear and logistic regression**.
+
+### Loading Packages
+
+We load `tidymodels` for modeling functions, `ISLR` and `ISLR2` for data sets, and the `tidyverse`. We also will use the `glmnet` package to perform ridge regression.
+
+```{r}
+library(tidymodels)
+library(ISLR)
+library(ISLR2)
+library(tidyverse)
+library(glmnet)
+tidymodels_prefer()
+```
+
+### Data
+
+We'll be working with the `Hitters` data set for this lab.
+
+```{r}
+Hitters <- as_tibble(Hitters) %>%
+  filter(!is.na(Salary))
+```
+
+#### Activities
+
+- Access the help page for `Hitters`. Familiarize yourself with the subject of each data set and the predictor variables.
+
+## The Initial Split
+
+We can start, as normal, by splitting the data into training and testing sets, using stratified sampling. We also use *k*-fold cross-validation with $k = 10$ on the training set.
+
+```{r}
+set.seed(3435)
+Hitters_split <- initial_split(Hitters, strata = "Salary")
+
+Hitters_train <- training(Hitters_split)
+Hitters_test <- testing(Hitters_split)
+
+Hitters_fold <- vfold_cv(Hitters_train, v = 10)
+```
+
+#### Activities
+
+- Note that no proportion was specified in `initial_split()`. Check the help information for this function. What is the default specification? Check the dimensions of the training and test sets to verify.
+
+## Ridge Regression
+
+`parsnip` does not have a dedicated function to create a ridge regression model specification. You need to use **either** `linear_reg()` or `logistic_reg()` and set `mixture = 0` to specify a ridge model. The `mixture` argument specifies the amount of different types of regularization; `mixture = 0` specifies only ridge regularization and `mixture = 1` specifies only lasso regularization. Setting `mixture` to a value between 0 and 1 lets us use both. When using the `glmnet` engine, we also need to set a penalty to be able to fit the model. We will set this value to 0 for now; it is not necessarily the best value, but we will look at how to select the best value in a little bit.
+
+Here, we start out by fitting a ridge regression to the entire training set. In the next section, we'll tune it by fitting it to the folds, to select the optimal value of `penalty`.
+
+```{r}
+ridge_spec <- linear_reg(mixture = 0, penalty = 0) %>%
+  set_mode("regression") %>%
+  set_engine("glmnet")
+```
+
+Once the specification is created, we can fit it to our data. We will use all the predictors.
+
+```{r}
+ridge_fit <- fit(ridge_spec, Salary ~ ., data = Hitters_train)
+```
+
+The `glmnet` package will fit the model for all values of `penalty` at once, so let us see what the parameter estimates for the model is now that we have `penalty = 0`.
+
+```{r}
+tidy(ridge_fit)
+```
+
+Let us, instead, see what the estimates would be if the penalty was $11498$, in contrast.
+
+```{r}
+tidy(ridge_fit, penalty = 11498)
+```
+
+Here's a penalty of $705$:
+
+```{r}
+tidy(ridge_fit, penalty = 705)
+```
+
+And $50$:
+
+```{r}
+tidy(ridge_fit, penalty = 50)
+```
+
+#### Activities
+
+- Compare and contrast the estimates for these two very different penalty values. What do you notice?
+
+We can visualize how the magnitude of the coefficients are being regularized towards zero as the penalty goes up:
+
+```{r}
+ridge_fit %>%
+  extract_fit_engine() %>%
+  plot(xvar = "lambda")
+```
+
+Prediction is done as normal; if we use `predict()` by itself, then `penalty = 0`, as we set in the model specification, is used.
+
+```{r}
+predict(ridge_fit, new_data = Hitters_train)
+```
+
+But we can also get predictions for other values of `penalty` by specifying it in `predict()`:
+
+```{r}
+predict(ridge_fit, new_data = Hitters_train, penalty = 500)
+```
+
+#### Activities
+
+- What do you notice about the predicted values for these observations as the value of `penalty` changes?
+
+
+We saw how we can fit a ridge model and make predictions for different values of `penalty`, but it would be nice if we could find the “best” value of `penalty`. This is something we can use hyperparameter tuning for.
+
+### Hyperparameter Tuning
+
+Hyperparameter tuning is, in its simplest form, a way of fitting many models with different sets of hyperparameters trying to find one that performs “best.” The complexity in hyperparameter tuning can come from the number of different models tried. We will keep it simple for this lab and only look at grid search, only looking at evenly spaced parameter values. This is a fine enough approach if you have one or two tunable parameters, but can become computationally infeasible. See the chapter on ['iterative search'](https://www.tmwr.org/iterative-search.html) from ['Tidy Modeling with R'](https://www.tmwr.org/) for more information.
+
+We can use the `tune_grid()` function to perform hyperparameter tuning using a grid search. `tune_grid()` needs 3 different things;
+
+a `workflow` object containing the model and preprocessor,
+a `rset` object containing the resamples the workflow should be fitted within, and
+a tibble containing the parameter values to be evaluated.
+
+Optionally, a metric set of performance metrics can be supplied for evaluation. If you don’t set one, then a default set of performance metrics is used.
+
+We already have a `resample` object created in `Hitters_fold`. Now we should create the workflow specification.
+
+We just used the training set as is when we fit the model earlier. But ridge regression is scale sensitive, so we need to make sure that the variables are on the same scale. We can use `step_normalize()`. Secondly, let us deal with the factor variables, using `step_novel()` and `step_dummy()`.
+
+```{r}
+ridge_recipe <- 
+  recipe(formula = Salary ~ ., data = Hitters_train) %>% 
+  step_novel(all_nominal_predictors()) %>% 
+  step_dummy(all_nominal_predictors()) %>% 
+  step_zv(all_predictors()) %>% 
+  step_normalize(all_predictors())
+```
+
+The model specification will look very similar to what we have seen earlier, but we will set `penalty = tune()`. This tells `tune_grid()` that the `penalty` parameter should be tuned.
+
+```{r}
+ridge_spec <- 
+  linear_reg(penalty = tune(), mixture = 0) %>% 
+  set_mode("regression") %>% 
+  set_engine("glmnet")
+```
+
+Now we combine to create a `workflow` object.
+
+```{r}
+ridge_workflow <- workflow() %>% 
+  add_recipe(ridge_recipe) %>% 
+  add_model(ridge_spec)
+```
+
+The last thing we need is the values of `penalty` we are trying. This can be created using `grid_regular()`, which creates a grid of evenly spaced parameter values. We use the `penalty()` function from the `dials` package to denote the parameter and set the range of the grid we are searching for. Note that this range is log-scaled.
+
+```{r}
+penalty_grid <- grid_regular(penalty(range = c(-5, 5)), levels = 50)
+penalty_grid
+```
+
+#### Activities
+
+- What does `step_novel()` do? Why might it be useful?
+- How does `penalty_grid` change if you set `levels = 100`? `levels = 10`?
+- Investigate the other `grid` functions in `tidymodels`. Try one of them out here. What do you notice?
+
+Using 50 levels for one parameter might seem overkill, and in many applications it is. But remember that `glmnet` fits all the models in one go, so adding more levels to `penalty` doesn’t affect the computational speed much for linear or logistic regression.
+
+Now we have everything we need and we can fit all the models.
+
+```{r}
+tune_res <- tune_grid(
+  ridge_workflow,
+  resamples = Hitters_fold, 
+  grid = penalty_grid
+)
+
+tune_res
+```
+
+The output of `tune_grid()` can be hard to read by itself, unprocessed. `autoplot()` creates a great visualization:
+
+```{r}
+autoplot(tune_res)
+```
+
+Here we see that the amount of regularization affects the performance metrics differently. Note how there are areas where the amount of regularization doesn’t have any meaningful influence on the coefficient estimates. We can also see the raw metrics that created this chart by calling `collect_metrics()`.
+
+```{r}
+collect_metrics(tune_res)
+```
+
+The “best” values of this can be selected using `select_best()`; this function requires you to specify a matric that it should use to select.
+
+```{r}
+best_penalty <- select_best(tune_res, metric = "rsq")
+best_penalty
+```
+
+This value of penalty can then be used with `finalize_workflow()` to update/finalize the recipe by replacing `tune()` with the value of `best_penalty`. Now, this **best** model should be fit again, this time using the **whole training data set**.
+
+```{r}
+ridge_final <- finalize_workflow(ridge_workflow, best_penalty)
+
+ridge_final_fit <- fit(ridge_final, data = Hitters_train)
+```
+
+This final model can now be applied on our testing data set to validate its performance:
+
+```{r}
+augment(ridge_final_fit, new_data = Hitters_test) %>%
+  rsq(truth = Salary, estimate = .pred)
+```
+
+#### Activities
+
+- Evaluate the performance of this model. Look at the parameter estimates for the training data. What does this tell you about the parameters?
+
+## Lasso Regression
+
+We will use the `glmnet` package to perform lasso linear regression. `parsnip` does not have a dedicated function to create a ridge regression model specification. For a linear lasso regression, you need to use `linear_reg()` and set `mixture = 1` to specify a lasso model.
+
+The following procedure will be very similar to what we saw in the ridge regression section. The preprocessing needed is the same, but let us write it out one more time.
+
+```{r}
+lasso_recipe <- 
+  recipe(formula = Salary ~ ., data = Hitters_train) %>% 
+  step_novel(all_nominal_predictors()) %>% 
+  step_dummy(all_nominal_predictors()) %>% 
+  step_zv(all_predictors()) %>% 
+  step_normalize(all_predictors())
+
+lasso_spec <- 
+  linear_reg(penalty = tune(), mixture = 1) %>% 
+  set_mode("regression") %>% 
+  set_engine("glmnet") 
+
+lasso_workflow <- workflow() %>% 
+  add_recipe(lasso_recipe) %>% 
+  add_model(lasso_spec)
+```
+
+While we are doing a different kind of regularization, we still use the same `penalty` argument. We've picked a different range for the values of `penalty`, since we know it will be a good range. You would, in practice, have to search a wide range of values at first, then narrow in on a range of interest.
+
+```{r}
+penalty_grid <- grid_regular(penalty(range = c(-2, 2)), levels = 50)
+```
+
+And we can use `tune_grid()` again.
+
+```{r}
+tune_res <- tune_grid(
+  lasso_workflow,
+  resamples = Hitters_fold, 
+  grid = penalty_grid
+)
+
+autoplot(tune_res)
+```
+
+We select the best value of penalty using `select_best()`:
+
+```{r}
+best_penalty <- select_best(tune_res, metric = "rsq")
+```
+
+And refit the using the whole training data set:
+
+```{r}
+lasso_final <- finalize_workflow(lasso_workflow, best_penalty)
+
+lasso_final_fit <- fit(lasso_final, data = Hitters_train)
+```
+
+And finally, predict on the testing set:
+
+```{r}
+augment(ridge_final_fit, new_data = Hitters_test) %>%
+  rsq(truth = Salary, estimate = .pred)
+```
+
+#### Activities
+
+- Which model, ridge or lasso, performed best on the testing data?
+
+- Instead of using `select_best()`, try selecting by one standard error, and refit to the training and testing sets. Does anything change?
+
+## Resources
+
+The free book [Tidy Modeling with R](https://www.tmwr.org/) is strongly recommended.
+
+## Source
+
+Several parts of this lab come directly from the ["ISLR Tidymodels Labs"](https://emilhvitfeldt.github.io/ISLR-tidymodels-labs/index.htmll). Credit to Emil Hvitfeldt for writing and maintaining the open-source book.
