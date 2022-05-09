@@ -1,5 +1,5 @@
 ---
-title: "Lab 5: Regularization"
+title: "Lab 6: Beyond Linearity"
 author: "PSTAT 131/231"
 output:
     html_document:
