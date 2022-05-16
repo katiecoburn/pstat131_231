@@ -29,6 +29,13 @@ Make sure you load the `tidyverse` and `tidymodels`!
 
 Create a recipe for this dataset **identical** to the recipe you used in Homework 3.
 
+```{r}
+library(tidyverse)
+library(tidymodels)
+titanic <- read_csv("data/titanic.csv")
+```
+
+
 ### Question 1
 
 Split the data, stratifying on the outcome variable, `survived.`  You should choose the proportions to split the data into. Verify that the training and testing data sets have the appropriate number of observations. 
