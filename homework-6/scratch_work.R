@@ -2,8 +2,11 @@ library(tidyverse)
 library(tidymodels)
 library(janitor)
 library(vip)
+library(rpart)
+library(rpart.plot)
+library(ranger)
 
-pokemon <- read_csv("homework-5/data/Pokemon.csv") %>% 
+pokemon <- read_csv("homework-6/data/Pokemon.csv") %>% 
   clean_names() %>% 
   filter(type_1 %in% c('Bug', 'Fire', 'Grass', 'Normal', 'Water', 'Psychic')) %>% 
   mutate(legendary = factor(legendary),
@@ -45,6 +48,8 @@ tune_res <- tune_grid(
 
 autoplot(tune_res)
 
+collect_metrics(tune_res) %>% 
+  arrange(-mean)
 best_complexity <- select_best(tune_res)
 
 class_tree_final <- finalize_workflow(class_tree_wf, best_complexity)
@@ -53,9 +58,6 @@ class_tree_final_fit <- fit(class_tree_final, data = pokemon_train)
 class_tree_final_fit %>%
   extract_fit_engine() %>%
   rpart.plot(roundint = F)
-
-vip(class_tree_final_fit)
-
 
 predicted_data <- augment(class_tree_final_fit, new_data = pokemon_test) %>% 
   select(type_1, starts_with(".pred"))
