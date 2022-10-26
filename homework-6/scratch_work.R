@@ -46,6 +46,8 @@ tune_res <- tune_grid(
   metrics = metric_set(roc_auc)
 )
 
+write_rds(tune_res, "homework-6/model-results/decision_tree_tuning.rds")
+
 autoplot(tune_res)
 
 collect_metrics(tune_res) %>% 
@@ -92,6 +94,8 @@ tune_res <- tune_grid(
   grid = param_grid, 
   metrics = metric_set(roc_auc)
 )
+
+save(tune_res, 'homework-6/rf.RData')
 
 autoplot(tune_res)
 

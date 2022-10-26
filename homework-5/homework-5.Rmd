@@ -51,13 +51,13 @@ Next, use *v*-fold cross-validation on the training set. Use 5 folds. Stratify t
 
 Set up a recipe to predict `type_1` with `legendary`, `generation`, `sp_atk`, `attack`, `speed`, `defense`, `hp`, and `sp_def`.
 
-- Dummy-code `legendary` and `generation`;
+-   Dummy-code `legendary` and `generation`;
 
-- Center and scale all predictors.
+-   Center and scale all predictors.
 
 ### Exercise 5
 
-We'll be fitting and tuning an elastic net, tuning `penalty` and `mixture` (use `multinom_reg` with the `glmnet` engine).
+We'll be fitting and tuning an elastic net, tuning penalty and mixture (use multinom_reg with the `glmnet` engine).
 
 Set up this model and workflow. Create a regular grid for `penalty` and `mixture` with 10 levels each; `mixture` should range from 0 to 1. For this assignment, we'll let `penalty` range from -5 to 5 (it's log-scaled).
 
@@ -85,5 +85,4 @@ What do you notice? How did your model do? Which Pokemon types is the model best
 
 ### Exercise 9
 
-In the 2020-2021 season, Stephen Curry, an NBA basketball player, made 337 out of 801 three point shot attempts (42.1%). Use bootstrap resampling on a sequence of 337 1’s (makes) and 464 0’s (misses). For each bootstrap sample, compute and save the sample mean (e.g. bootstrap FG% for the player). Use 1000 bootstrap samples to plot a histogram of those values. Compute the 99% bootstrap confidence interval for Stephen Curry’s “true” end-of-season
-FG% using the quantile function in R. Print the endpoints of this interval.
+In the 2020-2021 season, Stephen Curry, an NBA basketball player, made 337 out of 801 three point shot attempts (42.1%). Use bootstrap resampling on a sequence of 337 1's (makes) and 464 0's (misses). For each bootstrap sample, compute and save the sample mean (e.g. bootstrap FG% for the player). Use 1000 bootstrap samples to plot a histogram of those values. Compute the 99% bootstrap confidence interval for Stephen Curry's "true" end-of-season FG% using the quantile function in R. Print the endpoints of this interval.

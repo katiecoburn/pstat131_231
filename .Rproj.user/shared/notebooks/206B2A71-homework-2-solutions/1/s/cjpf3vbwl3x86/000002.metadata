@@ -1,1 +1,1 @@
-{"height":257.725587144623,"width":417.0,"size_behavior":0,"conditions":[]}
+{"height":368.97404202719408,"width":597.0,"size_behavior":0,"conditions":[[0,"`stat_bin()` using `bins = 30`. Pick better value with\n`binwidth`.\n"]]}

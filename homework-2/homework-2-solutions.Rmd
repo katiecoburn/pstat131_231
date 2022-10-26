@@ -62,7 +62,7 @@ Split the abalone data into a training set and a testing set. Use stratified sam
 ```{r}
 set.seed(3435) # you can use any number you like
 abalone_split <- abalone %>% initial_split(strata = age, 
-                                           prop = 0.70)
+                                           prop = 3/4)
 abalone_train <- training(abalone_split)
 abalone_test <- testing(abalone_split)
 ```
@@ -80,7 +80,7 @@ Steps for your recipe:
     -   `type` and `shucked_weight`,
     -   `longest_shell` and `diameter`,
     -   `shucked_weight` and `shell_weight`
-    
+
 3.  center all predictors, and
 
 4.  scale all predictors.
@@ -120,6 +120,10 @@ abalone_workflow <- workflow() %>%
   add_model(lm_model)
 
 abalone_fit <- fit(abalone_workflow, abalone_train)
+
+abalone_fit %>% 
+  extract_fit_parsnip() %>% 
+  tidy()
 ```
 
 ### Question 6
@@ -149,12 +153,12 @@ Now you want to assess your model's performance. To do this, use the `yardstick`
 
 ```{r}
 multi_metric <- metric_set(rmse, rsq, mae)
-abalone_predict <- predict(abalone_fit, abalone_train) %>% 
-  bind_cols(abalone_train %>% select(age))
+abalone_predict <- predict(abalone_fit, abalone_test) %>% 
+  bind_cols(abalone_test %>% select(age))
 multi_metric(abalone_predict, truth = age, estimate = .pred)
 ```
 
-*The $R^2$ value here is pretty low; it means that only about $55\%$ of variation in abalone age was explained by the model. This is likely because the relationship between age and the predictors is not necessarily linear. If you're interested, suggest running some linear regression diagnostics to assess.*
+*The* $R^2$ value here is pretty low; it means that only about $55\%$ of variation in abalone age was explained by the model. This is likely because the relationship between age and the predictors is not necessarily linear. If you're interested, suggest running some linear regression diagnostics to assess.
 
 ### Required for 231 Students
 
@@ -166,15 +170,15 @@ $$
 
 where the underlying model $Y=f(X)+\epsilon$ satisfies the following:
 
-- $\epsilon$ is a zero-mean random noise term and $X$ is non-random (all randomness in $Y$ comes from $\epsilon$);
-- $(x_0, y_0)$ represents a test observation, independent of the training set, drawn from the same model;
-- $\hat{f}(.)$ is the estimate of $f$ obtained from the training set.
+-   $\epsilon$ is a zero-mean random noise term and $X$ is non-random (all randomness in $Y$ comes from $\epsilon$);
+-   $(x_0, y_0)$ represents a test observation, independent of the training set, drawn from the same model;
+-   $\hat{f}(.)$ is the estimate of $f$ obtained from the training set.
 
 #### Question 8
 
 Which term(s) in the bias-variance tradeoff above represent the reproducible error? Which term(s) represent the irreducible error?
 
-*The term that represents irreducible error is $Var(\epsilon)$. The other terms, $Var(\hat{f}(x_0))$ and $[Bias(\hat{f}(x_0))]^2$, combined, represent the reducible error.*
+*The term that represents irreducible error is* $Var(\epsilon)$. The other terms, $Var(\hat{f}(x_0))$ and $[Bias(\hat{f}(x_0))]^2$, combined, represent the reducible error.
 
 #### Question 9
 
@@ -198,14 +202,14 @@ Prove the bias-variance tradeoff.
 
 Hints:
 
-- use the definition of $Bias(\hat{f}(x_0))=E[\hat{f}(x_0)]-f(x_0)$;
-- reorganize terms in the expected test error by adding and subtracting $E[\hat{f}(x_0)]$
+-   use the definition of $Bias(\hat{f}(x_0))=E[\hat{f}(x_0)]-f(x_0)$;
+-   reorganize terms in the expected test error by adding and subtracting $E[\hat{f}(x_0)]$
 
 $$
 E[(y_0 - \hat{f}(\textbf{x}_0))^2]=Var(\hat{f}(\textbf{x}_0))+[Bias(\hat{f}(\textbf{x}_0)]^{2}+Var(\epsilon)
 $$
 
-*We start by expanding the left-hand side of the equation to demonstrate that it is equal to the right-hand side. Since we know that $y_{0} = f(x)+\epsilon$:*
+*We start by expanding the left-hand side of the equation to demonstrate that it is equal to the right-hand side. Since we know that* $y_{0} = f(x)+\epsilon$:
 
 $$
 E[(y_0 - \hat{f}(\textbf{x}_0))^2]=E[(f(x) + \epsilon - \hat{f}(\textbf{x}_0))^2]
@@ -223,7 +227,7 @@ $$
 =E[(f(\textbf{x}_0)-\hat{f}(\textbf{x}_0))^2]+Var(\epsilon)
 $$
 
-*We follow the hint by adding and subtracting $E[\hat{f}(\textbf{x}_0)]$ to the first term:*
+*We follow the hint by adding and subtracting* $E[\hat{f}(\textbf{x}_0)]$ to the first term:
 
 $$
 =E[(f(\textbf{x}_0)+E[\hat{f}(\textbf{x}_0)]-E[\hat{f}(\textbf{x}_0)]-\hat{f}(\textbf{x}_0))^2]+Var(\epsilon)

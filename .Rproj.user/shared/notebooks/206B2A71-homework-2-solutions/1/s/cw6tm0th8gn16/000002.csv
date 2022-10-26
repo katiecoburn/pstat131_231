@@ -1,7 +1,0 @@
-"0","lm_model <- linear_reg() %>% 
-  set_engine(""lm"") %>% 
-  add_recipe(abalone_recipe)
-"
-"2","Error: `x` must be a workflow.
-[90mRun `rlang::last_error()` to see where the error occurred.[39m
-"
