@@ -136,15 +136,19 @@ Fit each of the models created in Question 4 to the folded data.
 
 **IMPORTANT:** *Some models may take a while to run – anywhere from 3 to 10 minutes. You should NOT re-run these models each time you knit. Instead, run them once, using an R script, and store your results; look into the use of [loading and saving](https://www.r-bloggers.com/2017/04/load-save-and-rda-files/). You should still include the code to run them when you knit, but set `eval = FALSE` in the code chunks.*
 
-```{r}
+```{r, eval=FALSE}
 log_fit <- fit_resamples(log_wkflow, titanic_folds)
 
 lda_fit <- fit_resamples(resamples = titanic_folds, 
-                         lda_wkflow,  
-                         control = control)
+                         lda_wkflow)
 
-qda_fit <- fit_resamples(qda_wkflow, resamples = titanic_folds,
-                         control = control)
+qda_fit <- fit_resamples(qda_wkflow, resamples = titanic_folds)
+
+test <- list(log_fit, lda_fit, qda_fit)
+save(test, file = "all_model_results.rda")
+load("all_model_results.rda")
+
+log_fit <- test[[1]]
 ```
 
 ### Question 6
@@ -154,6 +158,9 @@ Use `collect_metrics()` to print the mean and standard errors of the performance
 Decide which of the 3 fitted models has performed the best. Explain why. *(Note: You should consider both the mean accuracy and its standard error.)*
 
 ```{r}
+log_fit_othername <- load("log_results.rda")
+log_fit_results <- read_rds("log_results.rds")
+
 collect_metrics(log_fit)
 collect_metrics(lda_fit)
 collect_metrics(qda_fit)

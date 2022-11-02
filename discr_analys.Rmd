@@ -2,29 +2,247 @@
 title: "Deep Dive into Discriminant Analysis"
 author: "PSTAT 131"
 date: "2022-10-26"
-output: html_document
+output:
+  html_document:
+    code_folding: hide
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, message = FALSE,
+                      warning = FALSE)
 ```
 
-## R Markdown
+## Data
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+Although discriminant analyses like LDA and QDA can work with any categorical outcomes, the number of decision boundaries that can be produced is equal to $k - 1$ where $k$ is the number of classes; in other words, binary classification results in $1$ decision boundary, etc. So here we'll use a classification dataset where the outcome has three levels; that will make some aspects of the models easier to illustrate.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+We'll use one of the classic machine learning example datasets, `iris` (which is loaded with base R automatically). You can type `?iris` for more details about it. It contains 150 measurements of sepal and petal length and width for 3 different species of iris, 50 flowers per species. The goal is to **correctly classify the species of iris** based on the four predictors.
 
-```{r cars}
-summary(cars)
+We also load the `janitor` package here, primarily to use its `clean_names()` function, which will automatically convert the column names to snake case.
+
+```{r}
+library(MASS)
+library(tidyverse)
+library(tidymodels)
+library(discrim)
+library(poissonreg)
+library(corrr)
+library(ggthemes)
+library(janitor)
+tidymodels_prefer()
+
+set.seed(3000) # can be any number
+
+iris <- iris %>% 
+  clean_names() %>% 
+  tibble()
+
+iris_split <- iris %>% 
+  initial_split(strata = species, prop = 0.7)
+iris_train <- training(iris_split)
+iris_test <- testing(iris_split)
 ```
 
-## Including Plots
+We split the data into training and testing sets, and choose to include $70\%$ of the data in training and $30\%$ in testing. We use stratified sampling to make sure that there is an equal number of flowers with each species in the training and testing sets.
 
-You can also embed plots, for example:
+Note that we need to load the `MASS` package to fit the discriminant analysis models. This is not obvious, but `MASS` has a `select()` function of its own, and if you load packages into R that each have a function with the same name, the function from the package loaded most recently will overwrite the previous one(s). Since we want to use the `select()` function from `dplyr`, or from the tidyverse, we make sure to load `MASS` **first**. You can also handle conflicts between packages by using another package called `conflicted`, but here we'll simply use package installation order to handle conflicts.
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+Now we'll create two recipes to predict iris species -- one that we'll call Recipe A, which will use all four predictors, and another called Recipe B that will use just one. There's no need to dummy code, impute, or even rescale here; all predictors are continuous, with no missing data, and they are even on the same scale (centimeters).
+
+[Recipe A:]{.underline}
+
+```{r, class.source = 'fold-show'}
+iris_recipea <- recipe(species ~ sepal_length + sepal_width +
+                         petal_length + petal_width, iris_train)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+[Recipe B:]{.underline}
+
+```{r}
+iris_recipeb <- recipe(species ~ sepal_length + sepal_width, iris_train)
+```
+
+There are three classes, or levels, of the outcome variable, `setosa,` `versicolor,` and `virginica.` This is a **multiclass** classification problem, where $k = 3$. 
+
+## LDA with one predictor
+
+First, we'll look at the simpler model. We can fit an LDA model using Recipe B with the MASS engine; we can extract the results and look at them directly as shown.
+
+```{r}
+lda_mod <- discrim_linear() %>% 
+  set_mode("classification") %>% 
+  set_engine("MASS")
+
+lda_wkflow <- workflow() %>% 
+  add_model(lda_mod) %>% 
+  add_recipe(iris_recipeb)
+
+lda_fitb <- fit(lda_wkflow, iris_train)
+lda_fitb
+```
+
+Looking at these results actually tells us a number of things. We'll break them down step by step.
+
+### Prior probabilities
+
+First, we are given the prior probabilities of the two groups, or classes. In the `iris` data, $k = 3$; there are three classes of the outcome variable. The model tells us that the prior probability of each of the three classes is $0.3333333$. In other words, $\pi_{1} = \pi_{2} = \pi_{3} = 0.33$.
+
+How are those estimated? Well, we know that: $$
+\hat{\pi_k} = \frac{n_k}{n}
+$$ $n$ here is the total number of observations in the data -- here, in the training data -- so $n$ is $105$:
+
+```{r}
+dim(iris_train)[1]
+```
+
+$n_1$ is then the total number of observations in the training data that belong to the first class, say `setosa`, or $35$:
+
+```{r}
+iris_train %>% 
+  group_by(species) %>% 
+  summarise(count = n())
+```
+
+Therefore, $\hat{\pi_1} = \frac{35}{105}$, which is equal to $0.3333333$! The prior probability of each class of the outcome is simply the classical probability of that outcome, or the number of observations in that class divided by the total number of observations.
+
+Here, the prior probability for all three classes is the same, because the data were collected in such a way that there is an equal number of plants per species. 
+
+### Group means
+
+For our simplified recipe, there is only one  predictor -- sepal length in centimeters. Therefore, $p = 1$. In discriminant analysis -- whether it be linear or quadratic -- we are assuming, or allowing, the means of the predictor variables to differ across levels of the outcome variable. In other words:
+$$
+X_1|Y=k \sim N(\mu_{k}, \sigma^2)
+$$
+
+Therefore, there are three means for the predictor `sepal_length`; the mean of that predictor for level $1$ of the outcome (setosa irises), the mean of that predictor for level $2$ of the outcome (versicolor irises), and the mean for level $3$, virginica irises. There are also three means for the predictor `sepal_width`. We can see that in the results above. We can also extract and print just the group means (see code below) to look at them more easily:
+
+```{r}
+results <- lda_fitb %>% extract_fit_parsnip()
+results$fit$means
+```
+
+So this means that we are assuming $X_{sl} | Y = 1 \sim N(\mu_1 = 4.985714)$. In other words, the conditional distribution of sepal length given that the irises are species setosa has a mean of about $4.99$ centimeters. We can see here that there appears to be a difference in sepal length across species; $\mu_1 \neq \mu_2 \neq \mu_3$. The virginica irises seem to have the longest sepals on average.
+
+Where do the group mean values come from? Just like we see in the slides:
+$$
+\hat{\mu_k} = \frac{1}{n_k}\sum\limits_{i:y_i=k}x_i
+$$
+
+In other words, the average value of $X_{wage}$ for training observations in the given class. So:
+
+```{r}
+iris_train %>% 
+  group_by(species) %>% 
+  summarise(x_1 = mean(sepal_length))
+```
+
+Notice that the group means exactly match the output.
+
+So far, we have values of $\hat\pi_1$, $\hat\pi_2$, $\hat\pi_3$, and all six conditional group means, and all we've done is calculate classical probabilities and means!
+
+### Variance
+
+With LDA, we make the assumption that the variances are equal; in other words, that conditional variance of $X$ is the same across classes of the outcome -- $X|Y=k \sim N(\mu_{k}, \sigma^2)$. The estimate, $\hat{\sigma^2}$, is calculated as shown in the slides: $\hat{\sigma^2} = \frac{1}{n-K}\sum\limits_{k=1}^{K}\sum\limits_{i:y_i=k}(x_i - \hat{\mu_k})^2$
+
+We can generate the sum of squared deviations between $x_i$ and $\hat{\mu_k}$ as shown:
+
+```{r}
+iris_train %>% 
+  group_by(species) %>% 
+  summarise(devs = sum((sepal_length - mean(sepal_length))^2))
+```
+
+Now we need to sum these -- this is doing the outside summation, from $k = 1$ to $K$ (where $K = 2$):
+
+```{r}
+3.702857 + 9.638857 + 13.804000	
+```
+
+And divide it by $n - K$:
+
+```{r}
+27.14571/(105 - 3)
+```
+
+That is our estimate of the variance of `sepal_length` combined across levels of the outcome: $\hat{\sigma^2} = 0.2661344$.
+
+### Discriminants
+
+The last part of the output provides coefficients of linear discriminants for fare. So what exactly does that mean?
+
+First, let's generate the predicted values:
+
+```{r}
+# predictions <- predict(lda_fitb, 
+                      # new_data = titanic_train, 
+                     #  type = "raw")
+```
+
+We specify `type = "raw,"` which generates output that can vary depending on the model and the package engine. For LDA with MASS, there are three elements -- `class,` or the predicted class for each observation, `posterior,` a matrix of estimated probabilities for class membership, and `x,` which contains the linear discriminant values for each observation.
+
+We'll attach the linear discriminant values and probabilities of each class to the processed training data and look at it:
+
+```{r}
+# titanic_train_append <- bind_cols(predictions$x,
+#                                   predictions$posterior,
+#                                   (titanic_recipeb %>% prep() %>% juice()))
+# head(titanic_train_append)
+```
+
+The coefficient for fare from the model output is $0.02209788$. This means that the boundary between the two classes can be specified by the following formula:
+
+```{r}
+# y = 0.02209788 * titanic_train_append$fare
+```
+
+```{r}
+#titanic_train_append %>% 
+ # ggplot(aes(y = LD1, x = fare, color = survived)) + geom_point()
+```
+
+For the first observation shown above:
+
+```{r}
+7.2500 * (46.74756/2047.852) - ((46.74756^2)/2047.852) +
+  log(0.384)
+
+7.2500 * (22.07247/2047.852) - ((22.07247^2)/2047.852) +
+  log(0.616)
+-0.6442701*0.02209788
+0.02282761 * 7.25
+```
+
+```{r}
+#titanic_train_append %>% 
+  #ggplot(aes(LD1)) + geom_boxplot(aes(fill = survived))
+```
+
+
+
+## LDA with multiple predictors
+
+```{r}
+
+```
+
+Looking at this output directly actually tells us a number of things.
+
+Next, let's take a look at the group means section.
+
+### Group means
+
+For our example recipe, there are four predictors -- sex (coded as male or female), age, number of siblings or spouses on board, and number of parents or children on board. Therefore, $p = 4$. In discriminant analysis -- whether it be linear or quadratic -- we are assuming, or allowing, the means of the predictor variables to differ across levels of the outcome variable. In other words: $$
+(X_1, ..., X_4)|Y=k \sim N(\mu_{k}, \Sigma)
+$$
+
+Interpretation of the group means with multiple predictors is essentially the same; we just now have group means for each predictor!
+
+As a side note, let's specifically take a look at the group means for `sex_male` given $Y = 1$ or $Y = 2$. Our estimates here are $\hat{\mu_1} = 0.3179916$ and $\hat{\mu_2} = 0.8463542$, respectively. Since this predictor is binary, where 0 represents female and 1 represents male, these values are the proportions of 1s on `sex_male` per level of $Y$. In other words, about $32\%$ of Titanic survivors were male.
+
+### Variance
+
+With LDA, we make the assumption that the variances are equal; in other words, that the variance-covariance matrix is the same across classes of the outcome -- $(X_1, ..., X_4)|Y=k \sim N(\mu_{k}, \Sigma)$. We'll calculate the exact variance below, in a one-parameter case, since that's easier to work with in an illustration than a variance-covariance matrix of multiple predictors.
+
+```{r}
+```
+

@@ -175,7 +175,7 @@ qda_fit <- fit(qda_wkflow, titanic_train)
 
 **Repeat Question 5**, but this time specify a naive Bayes model for classification using the `"klaR"` engine. Set the `usekernel` argument to `FALSE`.
 
-```{r}
+```{r, warning=FALSE}
 nb_mod <- naive_Bayes() %>% 
   set_mode("classification") %>% 
   set_engine("klaR") %>% 
@@ -226,6 +226,7 @@ Fit the model with the highest training accuracy to the **testing** data. Report
 
 ```{r}
 lda_test <- fit(lda_wkflow, titanic_test)
+
 predict(lda_test, new_data = titanic_test, type = "class") %>% 
   bind_cols(titanic_test %>% select(survived)) %>% 
   accuracy(truth = survived, estimate = .pred_class)
@@ -243,6 +244,8 @@ augment(lda_test, new_data = titanic_test) %>%
 augment(lda_test, new_data = titanic_test) %>%
   roc_curve(survived, .pred_Yes) %>%
   autoplot()
+augment(lda_test, new_data = titanic_test) %>% 
+  roc_auc(survived, .pred_Yes)
 ```
 
 How did the model perform? Compare its training and testing accuracies. If the values differ, why do you think this is so?
