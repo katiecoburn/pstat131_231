@@ -35,18 +35,45 @@ Read in the data and set things up as in Homework 5:
 - Filter out the rarer Pokémon types
 - Convert `type_1` and `legendary` to factors
 
+```{r}
+library(tidyverse)
+library(tidymodels)
+library(janitor)
+
+pokemon <- read_csv("data/Pokemon.csv") %>% 
+  clean_names() %>% 
+  filter(type_1 %in% c('Bug', 'Fire', 'Grass', 'Normal', 'Water', 'Psychic')) %>% 
+  mutate(type_1 = factor(type_1), legendary = factor(legendary))
+```
+
 Do an initial split of the data; you can choose the percentage for splitting. Stratify on the outcome variable.
 
+```{r}
+set.seed(3435)
+pokemon_split <- initial_split(pokemon, prop = 0.7, strata = type_1)
+pokemon_train <- training(pokemon_split)
+pokemon_test <- testing(pokemon_split)
+```
+
 Fold the training set using *v*-fold cross-validation, with `v = 5`. Stratify on the outcome variable.
+
+```{r}
+set.seed(3435)
+pokemon_folds <- vfold_cv(data = pokemon_train, v = 5, strata = type_1)
+```
 
 Set up a recipe to predict `type_1` with `legendary`, `generation`, `sp_atk`, `attack`, `speed`, `defense`, `hp`, and `sp_def`:
 
 - Dummy-code `legendary` and `generation`;
 - Center and scale all predictors.
 
+```{r}
+
+```
+
 ### Exercise 2
 
-Create a correlation matrix of the training set, using the `corrplot` package. *Note: You can choose how to handle the continuous variables for this plot; justify your decision(s).*
+Create a correlation matrix of the training set, using the `corrplot` package. *Note: You can choose how to handle the categorical variables for this plot; justify your decision(s).*
 
 What relationships, if any, do you notice? Do these relationships make sense to you?
 
