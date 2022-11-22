@@ -48,7 +48,7 @@ Using the entire data set, create a bar chart of the outcome variable, `type_1`.
 
 ```{r}
 pokemon %>% 
-  ggplot(aes(x = type_1)) +
+  ggplot(aes(y = type_1)) +
   geom_bar()
 ```
 
@@ -61,6 +61,9 @@ For this assignment, we'll handle the rarer classes by simply filtering them out
 ```{r}
 pokemon <- pokemon %>% 
   filter(type_1 %in% c('Bug', 'Fire', 'Grass', 'Normal', 'Water', 'Psychic'))
+pokemon %>% 
+  ggplot(aes(y = type_1)) +
+  geom_bar()
 ```
 
 After filtering, convert `type_1` and `legendary` to factors.
@@ -138,17 +141,22 @@ How many total models will you be fitting when you fit these models to your fold
 
 Fit the models to your folded data using `tune_grid()`.
 
-```{r}
+```{r, eval=FALSE}
 tune_res <- tune_grid(
   en_workflow,
   resamples = pokemon_folds, 
   grid = en_grid
 )
+write_rds(tune_res, "tuning-results.rds")
+pokemon %>% select(hp)
+
+%in%
 ```
 
 Use `autoplot()` on the results. What do you notice? Do larger or smaller values of `penalty` and `mixture` produce better accuracy and ROC AUC?
 
 ```{r}
+read_rds()
 autoplot(tune_res)
 ```
 
