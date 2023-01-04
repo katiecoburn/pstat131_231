@@ -1,0 +1,3 @@
+"0","titanic_train %>% "
+"0","  ggplot(aes(x = survived)) +"
+"0","  geom_bar()"

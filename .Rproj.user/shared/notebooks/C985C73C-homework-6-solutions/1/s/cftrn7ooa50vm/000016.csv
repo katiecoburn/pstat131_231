@@ -1,0 +1,3 @@
+"0","pokemon %>% "
+"0","  ggplot(aes(x = total, color = generation)) +"
+"0","  geom_freqpoly(binwidth = 75)"

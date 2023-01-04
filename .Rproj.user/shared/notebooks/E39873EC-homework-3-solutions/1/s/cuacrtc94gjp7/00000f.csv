@@ -1,0 +1,3 @@
+"0","augment(lda_test, new_data = titanic_test) %>%"
+"0","  conf_mat(truth = survived, estimate = .pred_class) %>% "
+"0","  autoplot(type = ""heatmap"")"

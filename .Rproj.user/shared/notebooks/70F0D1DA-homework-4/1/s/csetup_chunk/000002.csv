@@ -1,0 +1,6 @@
+"0","knitr::opts_chunk$set(echo = TRUE, message = FALSE,"
+"2","Warning message:
+"
+"2","R graphics engine version 15 is not supported by this version of RStudio. The Plots tab will be disabled until a newer version of RStudio is installed. 
+"
+"0","                      warning = FALSE)"

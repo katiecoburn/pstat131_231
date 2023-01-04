@@ -1,0 +1,18 @@
+"0","augment(svm_rbf_fit, new_data = sim_data2_test) %>%
+  conf_mat(truth = y, estimate = .pred_class)
+"
+"1","          Truth
+"
+"1","Prediction"
+"1","   1"
+"1","   2"
+"1","
+         1"
+"1"," 142"
+"1","   8"
+"1","
+         2"
+"1","   8"
+"1","  42"
+"1","
+"

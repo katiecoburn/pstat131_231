@@ -1,0 +1,2 @@
+"0","decision_tree <- read_rds(""model-results/decision-tree-res.rds"")"
+"0","autoplot(decision_tree)"

@@ -181,7 +181,9 @@ predicted_data <- augment(en_final_fit, new_data = pokemon_test) %>%
 
 Calculate the overall ROC AUC on the testing set.
 
-```{r}
+First I will calculate the overall ROC AUC:
+
+```{r, eval=FALSE}
 predicted_data %>% roc_auc(type_1, .pred_Bug:.pred_Water)
 ```
 

@@ -1,0 +1,4 @@
+"0","set.seed(3435)"
+"0","pokemon_split <- initial_split(pokemon, prop = 0.7, strata = type_1)"
+"0","pokemon_train <- training(pokemon_split)"
+"0","pokemon_test <- testing(pokemon_split)"

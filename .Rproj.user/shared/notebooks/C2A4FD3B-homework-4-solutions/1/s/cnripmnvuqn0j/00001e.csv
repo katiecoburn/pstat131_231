@@ -1,0 +1,5 @@
+"0","log_fit <- fit_resamples(log_wkflow, titanic_folds)
+"
+"2","Error in fit_resamples(log_wkflow, titanic_folds) : 
+  could not find function ""fit_resamples""
+"

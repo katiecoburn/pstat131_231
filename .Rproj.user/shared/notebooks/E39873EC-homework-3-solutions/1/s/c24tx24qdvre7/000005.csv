@@ -1,0 +1,4 @@
+"0","titanic_train %>% "
+"0","  select(is.numeric, -passenger_id) %>% "
+"0","  cor(use = ""complete.obs"") %>% "
+"0","  corrplot(type = ""lower"", diag = FALSE)"

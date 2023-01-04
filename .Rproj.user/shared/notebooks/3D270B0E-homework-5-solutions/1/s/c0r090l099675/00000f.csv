@@ -1,0 +1,5 @@
+"0","pokemon_recipe <- recipe(type_1 ~ legendary + generation + "
+"0","                           sp_atk + attack + speed + defense + "
+"0","                           hp + sp_def, data = pokemon_train) %>% "
+"0","  step_dummy(all_nominal_predictors()) %>% "
+"0","  step_normalize(all_predictors())"

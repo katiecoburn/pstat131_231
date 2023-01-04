@@ -1,0 +1,2 @@
+"0","pokemon %>% ggplot(aes(x = legendary, y = total)) +"
+"0","  geom_boxplot()"

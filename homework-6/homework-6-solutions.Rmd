@@ -33,17 +33,22 @@ Read in the data and set things up as in Homework 5:
 
 - Use `clean_names()`
 - Filter out the rarer Pokémon types
-- Convert `type_1` and `legendary` to factors
+- Convert `type_1`, `legendary`, and `generation` to factors
 
 ```{r}
 library(tidyverse)
 library(tidymodels)
 library(janitor)
+library(corrplot)
+library(rpart.plot)
+tidymodels_prefer()
 
 pokemon <- read_csv("data/Pokemon.csv") %>% 
   clean_names() %>% 
   filter(type_1 %in% c('Bug', 'Fire', 'Grass', 'Normal', 'Water', 'Psychic')) %>% 
-  mutate(type_1 = factor(type_1), legendary = factor(legendary))
+  mutate(type_1 = factor(type_1), 
+         legendary = factor(legendary),
+         generation = factor(generation))
 ```
 
 Do an initial split of the data; you can choose the percentage for splitting. Stratify on the outcome variable.
@@ -68,80 +73,185 @@ Set up a recipe to predict `type_1` with `legendary`, `generation`, `sp_atk`, `a
 - Center and scale all predictors.
 
 ```{r}
-
+pokemon_recipe <- recipe(type_1 ~ legendary + generation + 
+                           sp_atk + attack + speed + defense + 
+                           hp + sp_def, data = pokemon_train) %>% 
+  step_dummy(legendary, generation) %>% 
+  step_normalize(all_predictors())
 ```
 
 ### Exercise 2
 
 Create a correlation matrix of the training set, using the `corrplot` package. *Note: You can choose how to handle the categorical variables for this plot; justify your decision(s).*
 
+```{r}
+pokemon %>% 
+  select_if(is.numeric) %>% 
+  select(-number) %>% 
+  cor() %>% 
+  corrplot(method = 'color', diag = F, type = 'lower')
+```
+
+*The decision of what to do with the categorical variables is up to the student. You could exclude them from the plot entirely, as shown. You could choose to treat `generation` as continuous and include it in the plot with the other variables. You could make a bar chart or chart(s) visualizing the combination(s) of `generation` and `legendary` with the other variables. As long as you **explain** the decision, any of these is fine.* 
+
+*Let's make bar charts of `total` broken down by the levels of the two categorical predictors.*
+
+```{r}
+pokemon %>% 
+  ggplot(aes(x = total, color = generation)) +
+  geom_freqpoly(binwidth = 75)
+```
+
+```{r}
+pokemon %>% ggplot(aes(x = legendary, y = total)) +
+  geom_boxplot()
+```
+
 What relationships, if any, do you notice? Do these relationships make sense to you?
 
-### Exercise 3
+*All the continuous statistics are positively correlated with `total`. This makes sense and seems appropriate. Legendary pokemon have much higher `total` scores compared to non-legendaries. Across generations, however, there isn't much difference in the distribution of `total`.*
+
+### Exercise 3 
 
 First, set up a decision tree model and workflow. Tune the `cost_complexity` hyperparameter. Use the same levels we used in Lab 7 -- that is, `range = c(-3, -1)`. Specify that the metric we want to optimize is `roc_auc`. 
 
-Print an `autoplot()` of the results. What do you observe? Does a single decision tree perform better with a smaller or larger complexity penalty?
-
-```{r, eval=FALSE}
+```{r}
 tree_spec <- decision_tree() %>%
   set_engine("rpart")
+
 class_tree_spec <- tree_spec %>%
   set_mode("classification") %>% 
   set_args(cost_complexity = tune())
+
 class_tree_wf <- workflow() %>% 
   add_model(class_tree_spec) %>% 
   add_recipe(pokemon_recipe)
 
-param_grid <- grid_regular(cost_complexity(range = c(-3, -1)), levels = 10)
+param_grid <- grid_regular(cost_complexity(range = c(-3, -1)), 
+                           levels = 10)
+```
 
+```{r, eval=FALSE}
 tune_res <- tune_grid(
   class_tree_wf, 
-  resamples = pokemon_fold, 
+  resamples = pokemon_folds, 
   grid = param_grid, 
   metrics = metric_set(roc_auc)
 )
+
+write_rds(tune_res, file = "model-results/decision-tree-res.rds")
 ```
 
+*It's not required, but is a good idea to save the results of model tuning and read them in with a different code chunk.*
+
+Print an `autoplot()` of the results. What do you observe? Does a single decision tree perform better with a smaller or larger complexity penalty?
 
 ```{r}
-library(tidymodels)
-library(tidyverse)
-
-decision_tree <- read_rds("model-results/decision_tree_tuning.rds")
-collect_metrics(decision_tree)
+decision_tree <- read_rds("model-results/decision-tree-res.rds")
+autoplot(decision_tree)
 ```
 
+*The single decision tree performs best with a cost-complexity value between about 0.007742637 and 0.035938137. With larger values, the area under the ROC curve starts to drop off, and is only 0.50, or random chance, by the time cost-complexity is 0.100. This indicates that a cost-complexity value that is too large is likely over-pruning the tree.*
 
 ### Exercise 4
 
 What is the `roc_auc` of your best-performing pruned decision tree on the folds? *Hint: Use `collect_metrics()` and `arrange()`.*
 
+*Those functions aren't the only way to do this; any working method is fine. Note that the `slice()` function is a way to quickly extract one row (here, the top row).*
+
+```{r}
+decision_tree %>% 
+  collect_metrics() %>% 
+  arrange(desc(mean)) %>% 
+  slice(1)
+```
+
+*The best-performing pruned tree has a complexity parameter value of about 0.02 and achieves an area under the ROC curve of about 0.65.*
+
 ### Exercise 5
 
 Using `rpart.plot`, fit and visualize your best-performing pruned decision tree with the *training* set.
 
-### Exercise 5
+```{r}
+best_pruned <- select_best(decision_tree, metric = "roc_auc")
 
-Now set up a random forest model and workflow. Use the `ranger` engine and set `importance = "impurity"`. Tune `mtry`, `trees`, and `min_n`. Using the documentation for `rand_forest()`, explain in your own words what each of these hyperparameters represent.
+prune_final <- finalize_workflow(class_tree_wf, best_pruned)
 
-Create a regular grid with 8 levels each. You can choose plausible ranges for each hyperparameter. Note that `mtry` should not be smaller than 1 or larger than 8. **Explain why not. What type of model would `mtry = 8` represent?**
+prune_final_train <- fit(prune_final, data = pokemon_train)
+
+prune_final_train %>% 
+  extract_fit_engine() %>% 
+  rpart.plot()
+```
+
+*Interpretation is not required, but definitely recommend trying to interpret the plot. This pruned tree has split on most of the predictors, but it ultimately never predicts `grass` as a type.*
 
 ### Exercise 6
 
-Specify `roc_auc` as a metric. Tune the model and print an `autoplot()` of the results. What do you observe? What values of the hyperparameters seem to yield the best performance?
+Now set up a random forest model and workflow. Use the `ranger` engine and set `importance = "impurity"`. Tune `mtry`, `trees`, and `min_n`. Using the documentation for `rand_forest()`, explain in your own words what each of these hyperparameters represent.
+
+```{r}
+forest_spec <- rand_forest() %>%
+  set_engine("ranger", importance = "impurity") %>%
+  set_mode("classification") %>% 
+  set_args(mtry = tune(),
+           trees = tune(),
+           min_n = tune())
+
+forest_wf <- workflow() %>% 
+  add_model(forest_spec) %>% 
+  add_recipe(pokemon_recipe)
+```
+
+Create a regular grid with 8 levels each. You can choose plausible ranges for each hyperparameter. Note that `mtry` should not be smaller than 1 or larger than 8. **Explain why not. What type of model would `mtry = 8` represent?**
+
+```{r}
+param_grid <- grid_regular(mtry(range = c(1, 8)), min_n(range = c(5, 20)),
+                                trees(range = c(200, 1000)), 
+                           levels = 8)
+```
+
+*These hyperparameters refer to (a) the number of trees being estimated in each forest, `trees`; (b) the minimum number of observations allowed in a given leaf node, `min_n`; and (c) the number of randomly selected parameters available at each split, `mtry`. For the case(s) where `mtry = 8`, each decision tree has all the predictors available at each split, and therefore we are using bagging. Values can't be larger because that would mean using more predictors than are available.*
 
 ### Exercise 7
 
-What is the `roc_auc` of your best-performing random forest model on the folds? *Hint: Use `collect_metrics()` and `arrange()`.*
+Specify `roc_auc` as a metric. Tune the model and print an `autoplot()` of the results. What do you observe? What values of the hyperparameters seem to yield the best performance?
+
+*Not required, but it is **strongly** recommended to run this code, save the results, and load them back in a separate code chunk.*
+
+```{r, eval=FALSE}
+tune_forest <- tune_grid(
+  forest_wf, 
+  resamples = pokemon_folds, 
+  grid = param_grid, 
+  metrics = metric_set(roc_auc)
+)
+
+write_rds(tune_forest, file = "model-results/rand-forest-res.rds")
+```
+
+*This should take about 15 - 20 minutes to run, 30 minutes at the most. If it takes any longer than that, there are a few things that might be the problem. The most likely possibility is the range of `trees` specified. With a range of 200 to 1000, as shown here, we are fitting 512 -- $8^3$ -- random forest models with different combinations of parameters to 5 folds for a total of 2,560 **random forests**. If each of these random forest models were to include only 200 trees, the minimum value, that would be a total of 2,560 times 200, or five hundred and twelve **thousand** individual decision trees.*
+
+*It should be clear, then, that specifying a wider range of values for `trees` will increase the run time -- potentially by quite a lot.*
+
+```{r}
+rand_forest <- read_rds(file = "model-results/rand-forest-res.rds")
+
+rand_forest %>% autoplot()
+```
+
 
 ### Exercise 8
+
+What is the `roc_auc` of your best-performing random forest model on the folds? *Hint: Use `collect_metrics()` and `arrange()`.*
+
+### Exercise 9
 
 Create a variable importance plot, using `vip()`, with your best-performing random forest model fit on the *training* set.
 
 Which variables were most useful? Which were least useful? Are these results what you expected, or not?
 
-### Exercise 9
+### Exercise 10
 
 Finally, set up a boosted tree model and workflow. Use the `xgboost` engine. Tune `trees`. Create a regular grid with 10 levels; let `trees` range from 10 to 2000. Specify `roc_auc` and again print an `autoplot()` of the results. 
 
@@ -149,7 +259,7 @@ What do you observe?
 
 What is the `roc_auc` of your best-performing boosted tree model on the folds? *Hint: Use `collect_metrics()` and `arrange()`.*
 
-### Exercise 10
+### Exercise 11
 
 Display a table of the three ROC AUC values for your best-performing pruned tree, random forest, and boosted tree models. Which performed best on the folds? Select the best of the three and use `select_best()`, `finalize_workflow()`, and `fit()` to fit it to the *testing* set. 
 
@@ -159,6 +269,6 @@ Which classes was your model most accurate at predicting? Which was it worst at?
 
 ## For 231 Students
 
-### Exercise 11
+### Exercise 12
 
 Using the `abalone.txt` data from previous assignments, fit and tune a random forest model to predict `age`. Use stratified cross-validation and select ranges for `mtry`, `min_n`, and `trees`. Present your results. What was the model's RMSE on your testing set?

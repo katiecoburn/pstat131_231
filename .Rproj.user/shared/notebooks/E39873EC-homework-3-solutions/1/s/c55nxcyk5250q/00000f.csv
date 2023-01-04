@@ -1,0 +1,6 @@
+"0","titanic_recipe <- recipe(survived ~ pclass + sex + age + "
+"0","                           sib_sp + parch + fare, titanic_train) %>% "
+"0","  step_impute_linear(age, impute_with = imp_vars(sib_sp)) %>% "
+"0","  # choice of predictors to impute with is up to you"
+"0","  step_dummy(all_nominal_predictors()) %>% "
+"0","  step_interact(~ starts_with(""sex""):age + age:fare)"
