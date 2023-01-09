@@ -46,45 +46,25 @@ To get help about `mean()`, you can uncomment (delete the `#`) and run either of
 
 Or simply open your Web browser and do a search for something like `R function mean help`.
 
-### GitHub
+#### The *tidyverse* and *tidymodels*
 
-This course will also use GitHub. You will all be asked to create a GitHub repository for your final project, and to submit the link to that repository for a grade at the end of the quarter. You will also need to create and use GitHub repositories for your weekly homework assignments.
+Throughout this course, in the homework and labs, we'll spend a lot of time using the [*tidyverse*](https://www.tidyverse.org/) and [*tidymodels*](https://www.tidymodels.org/). These are two collections of R packages that not only work together very well but also are relatively easy to use. The [*tidyverse*](https://www.tidyverse.org/) makes a lot of data manipulation, exploring, and visualizing much simpler, and [*tidymodels*](https://www.tidymodels.org/) has provided a framework that allows users to fit machine learning models in R more easily than ever before.
 
-If you are new to GitHub, *don't panic*. You're not alone.
+I recommend loading the following packages for all your homework assignments and for your final project:
 
-We use GitHub in this course so that students have a (relatively) low-pressure opportunity to practice and familiarize themselves with it. In the current data science world, using GitHub is a marketable skill. In addition, RStudio works well with GitHub, and is a (relatively) painless introduction.
+```{r}
+library(tidyverse)
+library(tidymodels)
+library(ggplot2)
+```
 
-Go to <https://github.com/> and create a free account, or log in with an existing account if you already have one.
-
-[This](https://happygitwithr.com/) is a great resource to help connect GitHub with RStudio.
-
-Install Git; see <https://happygitwithr.com/install-git.html> for additional details.
-
-### Get RStudio and Git Talking
-
-Let's start the conversation!
-
-Once you have R, Git, and RStudio installed, and you made a GitHub account, all that's left is to introduce yourself to Git and connect everything together. The other good news is that, if all goes well, you only have to do this whole setup process once.
-
-Follow steps 7 through 12, [starting here:](https://happygitwithr.com/hello-git.html).
-
-### Make Your First Repository
-
-Go to your GitHub home page and click the green button `New` to create a new repository. Name it something related to Lab 1; an example might be `lab-1-coburn`. Once you create the repository, there will be a link at the top -- see below, circled:
-
-![](images/Screen%20Shot%202022-03-25%20at%205.37.09%20PM-01.png){width="600"}
-
-Click the button directly to the right of the link. Then open RStudio and use the menus to create a new project from a GitHub repository. Paste the URL you just copied! RStudio should open a project for that repository.
-
-To make your first commit to the repo, move the .Rmd file for this lab into that directory. Use the `Git` pane in the top right of RStudio to make and push your first commit!
-
-When working in GitHub, any time you make a significant change to your R project, you should get in the habit of saving your file(s), making a commit, and pushing the commit to GitHub. When you come back to your R project to begin work, you should get in the habit of pulling from GitHub first.
+Recall that the first time you use the packages, you'll need to install them using `install.packages()`; make sure to install any packages **outside** of an .Rmd file, though, because including that command in an .Rmd will prevent the file from knitting. Speaking of .Rmd files:
 
 ### Update an .Rmd
 
 Markdown is the language R uses to create and update documents. If you write in a Markdown file within a **code chunk**, as shown below, that text will be processed and run like R code. If you write *outside* of the code chunks, like here, that text will not be run and will appear as text. You can format it as usual, include headings, etc.!
 
-.Rmd files are a special type of file, referred to as a dynamic document, that allows users to combine narrative (text) with R code. Because you will be turning in all your work for this course as .Rmd files, it is important that you quickly become familiar with this resource.
+.Rmd files are a special type of file, referred to as a dynamic document, that allows users to combine narrative (text) with R code. Because you will be turning in all your work for this course as .Rmd files and their knitted .html or .pdf file(s), it is important that you quickly become familiar with this resource.
 
 Try updating the code in the following code chunk. Assign `2+2` to another object, called `y`. `<-` is the assignment operator in R, commonly read as "gets."
 
@@ -98,17 +78,23 @@ x
 
 Take some time and work through the Markdown tutorial here: [www.markdown-tutorial.com](www.markdown-tutorial.com).
 
-In Markdown, code chunks can have specific options set for them; you can also set the options for chunks in the entire document. At the top of this .Rmd, you'll see a code chunk with `opts_chunk$set()`. Any options you set inside that function will apply to all code chunks in the document.
+In Markdown, code chunks can have specific options set for them; you can also set the options for chunks in the entire document. At the top of this .Rmd, you'll see a code chunk with `opts_chunk$set()`. Any options you set inside that function will apply to all code chunks in the document. I recommend you set the options used in this file for all your assignments, along with the options at the **very** top of the document --- `toc: true`, `toc_float: true`, and `code_folding: show`. You can go further and customize Markdown files as much as you like, but that's not required.
+
+### Creating an R Project
+
+I **strongly** recommend working in R within the context of [an R project](https://bookdown.org/ndphillips/YaRrr/projects-in-rstudio.html). It sounds complicated or unnecessary at first, but an R project -- which is essentially a special working directory, designated with an (automatically created) `.Rproj` file -- can make your life **much** easier, especially when working on your final project.
+
+Your TA can now go over how to create a new project.
+
+Working in an R project automatically sets your working directory to that project folder, rather than whatever your computer's default working directory is. That means you can readily access other .R scripts, photos, data files, etc. simply by putting them in your project folder, without having to write out lengthy file paths.
 
 ## Basics of Data Processing
 
-First, you'll need to install and load some packages. These include, but are not limited to: `tidyverse`, `tidymodels`, and `ISLR`. Make sure to install each of these using the `install.packages()` function and load them with `library()`. You'll need to uncomment the `install` lines below:
+Now we'll take some time to go over some of the basic tools for managing data via the *tidyverse*. There are many more functions that you might find useful, and you can read more about them in [R for Data Science](https://r4ds.had.co.nz/), if you're interested.
+
+First, you'll need to install and load some packages. These include, but are not limited to: `tidyverse`, `tidymodels`, and `ISLR`. Make sure to install each of these using the `install.packages()` function and load them with `library()`.
 
 ```{r}
-# install.packages("tidyverse")
-# install.packages("tidymodels")
-# install.packages("ISLR")
-
 library(tidyverse)
 library(tidymodels)
 library(ISLR)
@@ -120,7 +106,7 @@ Some packages include datasets when they are loaded. Set `eval = TRUE` and knit 
 mpg
 ```
 
-Run `?mpg` to learn more about this data set. 
+Run `?mpg` to learn more about this data set.
 
 There are five key `tidyverse` functions, or "verbs." We'll go through each of them briefly with the `mpg` data set. All of these functions work similarly; their first argument is a data frame, subsequent arguments describe operations on the data frame, and the function's result is a new data frame.
 
@@ -148,13 +134,13 @@ You can use the classic comparison operators -- `!=` for not equal to, `==` for 
 
 On your own, find ways to filter the `flights` data set from the `nycflights13` package to achieve each of the following:
 
-- Had an arrival delay of two or more hours
-- Flew to Houston (IAH or HOU)
-- Were operated by United, American, or Delta
-- Departed in summer (July, August, and September)
-- Arrived more than two hours late, but didn’t leave late
-- Were delayed by at least an hour, but made up over 30 minutes in flight
-- Departed between midnight and 6am (inclusive)
+-   Had an arrival delay of two or more hours
+-   Flew to Houston (IAH or HOU)
+-   Were operated by United, American, or Delta
+-   Departed in summer (July, August, and September)
+-   Arrived more than two hours late, but didn't leave late
+-   Were delayed by at least an hour, but made up over 30 minutes in flight
+-   Departed between midnight and 6am (inclusive)
 
 ### Select specific variables or columns by their names: `select()`
 
@@ -185,13 +171,13 @@ The tidyverse includes a number of helper functions that can be used inside `sel
 
 On your own, working with the `flights` data:
 
-- Find as many ways as you can to select `dep_time`, `dep_delay`, `arr_time`, and `arr_delay`.
+-   Find as many ways as you can to select `dep_time`, `dep_delay`, `arr_time`, and `arr_delay`.
 
-- What happens if you include the name of a variable multiple times in a `select()` call?
+-   What happens if you include the name of a variable multiple times in a `select()` call?
 
 ### Create or add new variables: `mutate()`
 
-Besides selecting existing columns, it’s often useful to add new columns that are functions of existing columns. That’s the job of `mutate()`.
+Besides selecting existing columns, it's often useful to add new columns that are functions of existing columns. That's the job of `mutate()`.
 
 `mutate()` always adds new columns at the end of your dataset, so we'll use `select()` to reorder the columns and put the new ones at the front. `everything()` is a helper function to grab all the other variables.
 
@@ -204,7 +190,7 @@ mpg %>%
   head()
 ```
 
-You can see an overview of a number of useful variable creation functions here: [https://r4ds.had.co.nz/transform.html#mutate-funs](https://r4ds.had.co.nz/transform.html#mutate-funs).
+You can see an overview of a number of useful variable creation functions here: <https://r4ds.had.co.nz/transform.html#mutate-funs>.
 
 For an alternative to `mutate()` when you only want to retain the newly created variables, not all variables, use `transmute()`:
 
@@ -218,9 +204,9 @@ transmute(mpg,
 
 On your own, working with the `flights` data:
 
-- Currently `dep_time` and `sched_dep_time` are convenient to look at, but hard to compute with because they’re not really continuous numbers. Convert them to a more convenient representation of number of minutes since midnight.
+-   Currently `dep_time` and `sched_dep_time` are convenient to look at, but hard to compute with because they're not really continuous numbers. Convert them to a more convenient representation of number of minutes since midnight.
 
-- What does 1:3 + 1:10 return? Why do you think it returns this?
+-   What does 1:3 + 1:10 return? Why do you think it returns this?
 
 ### Create grouped summaries of data frames: `summarise()`
 
