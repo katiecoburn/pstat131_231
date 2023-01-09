@@ -53,15 +53,15 @@ knitr::opts_chunk$set(echo = TRUE)
 \begin{center}
 \begin{tabular}{ll}
 \textsc{Instructor:} &Dr. Katie Coburn (\href{mailto:katie\_m\_coburn@ucsb.edu}{\texttt{katie\_m\_coburn@ucsb.edu}}) \\
-\textsc{Teaching Assistants:} &Hanmo Li (\href{mailto:hanmo@pstat.ucsb.edu}{\texttt{hanmo@pstat.ucsb.edu}})\\
-    &Lihao Xiao (\href{mailto:lihao@pstat.ucsb.edu}{\texttt{lihao@pstat.ucsb.edu}}) \\
-    %&Minwoo Park (\href{mailto:minwoo@pstat.ucsb.edu}{\texttt{minwoo@pstat.ucsb.edu}}) \\
-\textsc{Lecture:} &TR 12:30 - 1:45 pm Buchanan 1930 \\
-\textsc{Sections:}
-&T 5:00 - 5:50 pm PHELP 1513 \textsc{Li} \\
-&W 8:00 - 8:50 am PHELP 1513 \textsc{Xiao} \\
-&W 9:00 - 9:50 am PHELP 1513 \textsc{Xiao} \\
-&W 12:00 - 12:50 pm PHELP 1525 \textsc{Li} \\
+\textsc{Teaching Assistants:} &Mingzhao Hu (\href{mailto:mingzhaohu@ucsb.edu}{\texttt{mingzhaohu@ucsb.edu}})\\
+    &Huiyu Jiang (\href{mailto:huiyujiang@ucsb.edu}{\texttt{huiyujiang@ucsb.edu}}) \\
+    &Kuai Yu (\href{mailto:kuaiyu@ucsb.edu}{\texttt{kuaiyu@ucsb.edu}}) \\
+    &Alvin Liu (\href{mailto:ziyueliu@ucsb.edu}{\texttt{ziyueliu@ucsb.edu}}) \\
+    &John O'Brien (\href{mailto:johnobrien@ucsb.edu}{\texttt{johnobrien@ucsb.edu}}) \\
+\textsc{Undergraduate Learning Assistants:} &Ryan Stofer (\href{mailto:rstofer@ucsb.edu}{\texttt{rstofer@ucsb.edu}}) \\
+&Allen Wang (\href{mailto:xin874@ucsb.edu}{\texttt{xin874@ucsb.edu}}) \\
+\textsc{Lectures:} &TR 2:00 - 3:15 pm Buchanan 1920 \\
+&TR 5:00 - 6:15 pm North Hall 1006
 \end{tabular}
 \end{center}
 
@@ -92,7 +92,7 @@ them mathematically;
 
 <!-- \newpage -->
 \subsection*{Required Materials}
-\textsc{The books} and software used for this class are as follows. Note that the majority are freely available online and do not require purchase.
+\textsc{The books} and software used for this class are as follows. Note that all are freely available online and do not require purchase.
 
 \begin{itemize}
     \item \textbf{Required for PSTAT 131 students}: \textit{An Introduction to Statistical Learning with Applications in R} (or ISLR), by G. James, D. Witten, T. Hastie, R. Tibshirani. Available: \href{https://www.statlearning.com/}{https://www.statlearning.com/}
@@ -109,7 +109,7 @@ them mathematically;
 
 \begin{itemize}
     \item \textit{R for Data Science}, by H. Wickham, G. Grolemund. Available: \href{https://r4ds.had.co.nz/index.html}{https://r4ds.had.co.nz/index.html}
-    \item \textit{The StatQuest Illustrated Guide to Machine Learning}, by Josh Starmer. Available \href{https://www.amazon.com/dp/B0BLM4TLPY}{on Amazon}: \$27 for paperback. Based on videos available free at \href{https://www.youtube.com/\@statquest}{https://www.youtube.com/\@statquest}
+    \item \textit{The StatQuest Illustrated Guide to Machine Learning}, by Josh Starmer. Available \href{https://www.amazon.com/dp/B0BLM4TLPY}{on Amazon}: \$27 for paperback. Based on videos available free at \href{https://www.youtube.com/@statquest}{https://www.youtube.com/@statquest}
     \item \textit{Supervised Machine Learning for Text Analysis in R}, by E. Hvitfeldt and J. Silge. Available: \href{https://smltar.com/}{https://smltar.com/}
     \item \textit{Feature Engineering and Selection}, by M. Kuhn and K. Johnson. Available: \href{http://www.feat.engineering/}{http://www.feat.engineering/}
 \end{itemize}
@@ -118,12 +118,12 @@ them mathematically;
 \subsection*{Assessments}
 \textsc{Your attainment} of course learning outcomes will be measured by the following assessments, with the relative weighting indicated in parentheses. All assignments within each category are given equal weight.
 
-\vskip6pt\noindent Collaboration and open science are fundamental aspects of data science. You can (and are encouraged) to use the Internet, StackOverflow, etc. as a resource when coding. However, you \textbf{should not} directly copy code or answers. Your code should be well documented; include comments describing each line. If you use a source for help coding, you \textbf{must} cite it.
+\vskip6pt\noindent Collaboration and open science are fundamental aspects of data science. You can (and are encouraged) to use the Internet, StackOverflow, etc. as a resource when coding. However, you \textbf{should not} directly copy code or answers. Your code should be well documented; include comments describing each line. If you use a source for help coding, you \textbf{must} cite it. You \textbf{are permitted} to collaborate/work in groups on the homework if you choose, but everyone should work on their own final project -- it is not a group assignment.
 
 \vskip6pt\noindent You will \textbf{not} be graded on your completion of lab work or your attendance of labs, but doing the labs will be greatly beneficial for your homework and final project grades. You are strongly encouraged to attend lab sections and follow along with the materials for each lab, which will be posted each week.
 
 \begin{itemize}
-\item \textbf{Homework} (50\%). Homework is assigned \textbf{every week} and is due by Sundays at 11:59 PM PDT.  Each homework is worth 50 points.  One homework is assigned each week, except for the last week, for a total of \textbf{nine} homework assignments. Your \textbf{lowest} homework score will be dropped.
+\item \textbf{Homework} (50\%). Homework is assigned approximately every two weeks (this may vary) and will always be due by Sundays at 11:59 PM PDT. The graduate students will need to complete additional questions, but all assignments are ultimately rescaled to be out of 50 points. There are a total of \textbf{six} homework assignments. 
 
 \item \textbf{Final Project} (50\%). The final project is a significant portion of the class and allows students to demonstrate their understanding of the material by working with a data set of their own choosing. Each student should begin thinking about their project and looking for a data set immediately; a page on GauchoSpace provides a list of possible resources. You'll receive a lot of guidance about the project over the course of the quarter.
 
@@ -133,13 +133,13 @@ them mathematically;
 \subsection*{Course Schedule}
 \textsc{The weekly} schedule is indicated below. The topics and reading are subject to change based on the progress of the class.
 
-\begin{table}[]
+\begin{table}[H]
 \begin{tabular}{@{}llll@{}}
 \toprule
                 & \textbf{Topic}        & \textbf{Assignment}                                            & \textbf{Project Stage} \\ \midrule
 \textbf{Week 1} & Intro to ML           & Data Memo                                                               & Pick topic             \\
-\textbf{Week 2} & Linear regression     & Homework 1 & Find data              \\
-\textbf{Week 3} & Logistic regression   & Homework 2                                                     & Tidy data              \\
+\textbf{Week 2} & Feature engineering     & Homework 1 & Find data              \\
+\textbf{Week 3} & Linear \& logistic   & Homework 2                                                     & Tidy data              \\
 \textbf{Week 4} & Discriminant analysis & Homework 3                                                     & EDA                    \\
 \textbf{Week 5} & Regularization        & Homework 4                                                     & Run models             \\
 \textbf{Week 6} & Tree-based methods    & Homework 5                                                     &                        \\
@@ -147,36 +147,6 @@ them mathematically;
 \textbf{Week 8} & SVMs                  &                                                                & Edits                  \\
 \textbf{Week 9} & Neural networks       & Final Project                                                  & Final draft            \\ \bottomrule
 \end{tabular}
-\end{table}
-
-\begin{table}[H]
-\resizebox{\textwidth}{!}{%
-\begin{tabular}{|c|l|l|c|c|c|}
-\hline
-\textbf{Week} & \multicolumn{1}{c|}{\textbf{Date}} & \multicolumn{1}{c|}{\textbf{Topic}} & \textbf{Reading} & \textbf{Assignments} & \textbf{Final Project Stage} \\ \hline
-\multirow{2}{*}{\textbf{Week 1}} & Mar. 29 & \begin{tabular}[c]{@{}l@{}}Introduction \&\\ basics of ML\end{tabular} & Ch 1 ISLR \& ESL & \multirow{2}{*}{Homework 1} & \multirow{2}{*}{\begin{tabular}[c]{@{}c@{}}Decide on topic\\ \\ and locate data \\ set(s)\end{tabular}} \\ \cline{2-4}
- & Mar. 31 & Exploratory data analysis &  &  &  \\ \hline
-\multirow{2}{*}{\textbf{Week 2}} & Apr. 5 & Bias-variance tradeoff & Ch. 2 ISLR \& ESL & \multirow{2}{*}{Homework 2} & \multirow{4}{*}{Load and tidy data} \\ \cline{2-4}
- & Apr. 7 & Linear regression & Ch. 3 ISLR \& ESL &  &  \\ \cline{1-5}
-\multirow{2}{*}{\textbf{Week 3}} & Apr. 12 & Logistic regression & Ch. 4 ISLR \& ESL & \multirow{2}{*}{Homework 3} &  \\ \cline{2-4}
- & Apr. 14 & More on linear \& logistic &  &  &  \\ \hline
-\multirow{2}{*}{\textbf{Week 4}} & Apr. 19 & Resampling methods & Ch. 5 ISLR, 7 ESL & \multirow{2}{*}{Homework 4} & \multirow{4}{*}{\begin{tabular}[c]{@{}c@{}}Run and write up descriptive\\ analyses\end{tabular}} \\ \cline{2-4}
- & Apr. 21 & Discriminant analysis & Ch. 4 ISLR \& ESL &  &  \\ \cline{1-5}
-\multirow{2}{*}{\textbf{Week 5}} & Apr. 26 & Discriminant analysis cont. &  & \multirow{2}{*}{Homework 5} &  \\ \cline{2-4}
- & Apr. 28 & Linear model selection & Ch. 6 ISLR \& ESL &  &  \\ \hline
-\multirow{2}{*}{\textbf{Week 6}} & May 3 & Regularization & Ch. 5 ESL & \multirow{2}{*}{Homework 6} & \multirow{8}{*}{\begin{tabular}[c]{@{}c@{}}Run models\\ \\ \\ Write up results\\ \\ Work on draft \\ of paper\end{tabular}} \\ \cline{2-4}
- & May 5 & Beyond linearity & Ch. 7 ISLR, 9 ESL &  &  \\ \cline{1-5}
-\multirow{2}{*}{\textbf{Week 7}} & May 10 & Decision trees & Ch. 8.1 ISLR & \multirow{2}{*}{Homework 7} &  \\ \cline{2-4}
- & May 12 & Tree-based methods & Ch. 8.2 - 8.3 ISLR, 10 ESL &  &  \\ \cline{1-5}
-\multirow{2}{*}{\textbf{Week 8}} & May 17 & K-means & Ch. 12.4 ISLR, 14 ESL & \multirow{2}{*}{Homework 8} &  \\ \cline{2-4}
- & May 19 & Hierarchical clustering &  &  &  \\ \cline{1-5}
-\multirow{2}{*}{\textbf{Week 9}} & May 24 & PCA &  & \multirow{2}{*}{Homework 9} &  \\ \cline{2-4}
- & May 26 & SVM (I) & Ch. 9 ISLR, 12 ESL &  &  \\ \hline
-\multirow{2}{*}{\textbf{Week 10}} & May 31 & SVM (II) &  & \multirow{2}{*}{} & \multirow{2}{*}{\begin{tabular}[c]{@{}c@{}}Make edits\\ \\ Begin final draft\end{tabular}} \\ \cline{2-4}
- & June 2 & Neural networks & Ch. 10 ISLR, 11 ESL &  &  \\ \hline
- & June 6 &  &  & Final Project Due &  \\ \hline
-\end{tabular}%
-}
 \end{table}
 
 \subsection*{Time Commitment}

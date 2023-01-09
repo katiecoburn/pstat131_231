@@ -1,0 +1,259 @@
+---
+title: "Lab 1"
+author: "PSTAT 131/231"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE,
+                      warning = FALSE)
+```
+
+## Setup
+
+### R and RStudio
+
+All work in this course, including homework, labs, and the final project, will be conducted using *R* and *RStudio*. I understand that not all students will already be familiar with *R*, so I don't expect that everyone starts out at the same coding level. The instructional team, myself included, are here to help!
+
+First, go to <https://www.r-project.org/> and click *Download R*. Select a CRAN mirror link. Do this **EVEN IF** you already have R installed on your machine. If you have a previous R installation, re-downloading R will *update* your copy of R to the most recent version, which often fixes many small problems.
+
+Next, go to <https://www.rstudio.com/products/rstudio/download/> and download the **free** version of RStudio Desktop. We will almost always open and use RStudio to interact with R.
+
+You will be working with RStudio a lot, and you'll have time to learn most of the bells and whistles RStudio provides. Think about RStudio as your "workbench". Keep in mind that RStudio is MORE than plain R. RStudio is an environment that makes it easier to work with R, while handling many of the little tasks than can be a hassle.
+
+At this point, your TA will give a brief overview of the RStudio default four-pane layout and demonstrate how to change fonts, settings, etc.
+
+#### Getting Help with R
+
+Much of the time we spend using R involves interacting with functions. For example, to find the average of three numbers, we can call the `mean()` function:
+
+```{r}
+mean(c(1, 2, 3))
+```
+
+Each function in R has its own set of arguments and possible values that these arguments accept. You will often need to look up a specific function or one of its arguments -- very often! The good news is, there is a lot of R documentation out there, and it's fairly easy to get help.
+
+To get help about `mean()`, you can uncomment (delete the `#`) and run either of these lines:
+
+```{r}
+# ?mean
+# help(mean)
+```
+
+Or simply open your Web browser and do a search for something like `R function mean help`.
+
+### GitHub
+
+This course will also use GitHub. You will all be asked to create a GitHub repository for your final project, and to submit the link to that repository for a grade at the end of the quarter. You will also need to create and use GitHub repositories for your weekly homework assignments.
+
+If you are new to GitHub, *don't panic*. You're not alone.
+
+We use GitHub in this course so that students have a (relatively) low-pressure opportunity to practice and familiarize themselves with it. In the current data science world, using GitHub is a marketable skill. In addition, RStudio works well with GitHub, and is a (relatively) painless introduction.
+
+Go to <https://github.com/> and create a free account, or log in with an existing account if you already have one.
+
+[This](https://happygitwithr.com/) is a great resource to help connect GitHub with RStudio.
+
+Install Git; see <https://happygitwithr.com/install-git.html> for additional details.
+
+### Get RStudio and Git Talking
+
+Let's start the conversation!
+
+Once you have R, Git, and RStudio installed, and you made a GitHub account, all that's left is to introduce yourself to Git and connect everything together. The other good news is that, if all goes well, you only have to do this whole setup process once.
+
+Follow steps 7 through 12, [starting here:](https://happygitwithr.com/hello-git.html).
+
+### Make Your First Repository
+
+Go to your GitHub home page and click the green button `New` to create a new repository. Name it something related to Lab 1; an example might be `lab-1-coburn`. Once you create the repository, there will be a link at the top -- see below, circled:
+
+![](images/Screen%20Shot%202022-03-25%20at%205.37.09%20PM-01.png){width="600"}
+
+Click the button directly to the right of the link. Then open RStudio and use the menus to create a new project from a GitHub repository. Paste the URL you just copied! RStudio should open a project for that repository.
+
+To make your first commit to the repo, move the .Rmd file for this lab into that directory. Use the `Git` pane in the top right of RStudio to make and push your first commit!
+
+When working in GitHub, any time you make a significant change to your R project, you should get in the habit of saving your file(s), making a commit, and pushing the commit to GitHub. When you come back to your R project to begin work, you should get in the habit of pulling from GitHub first.
+
+### Update an .Rmd
+
+Markdown is the language R uses to create and update documents. If you write in a Markdown file within a **code chunk**, as shown below, that text will be processed and run like R code. If you write *outside* of the code chunks, like here, that text will not be run and will appear as text. You can format it as usual, include headings, etc.!
+
+.Rmd files are a special type of file, referred to as a dynamic document, that allows users to combine narrative (text) with R code. Because you will be turning in all your work for this course as .Rmd files, it is important that you quickly become familiar with this resource.
+
+Try updating the code in the following code chunk. Assign `2+2` to another object, called `y`. `<-` is the assignment operator in R, commonly read as "gets."
+
+```{r}
+# This is a code chunk!
+# Any uncommented text in here will be run as R code.
+# For example:
+x <- seq(1, 10, 1)
+x
+```
+
+Take some time and work through the Markdown tutorial here: [www.markdown-tutorial.com](www.markdown-tutorial.com).
+
+In Markdown, code chunks can have specific options set for them; you can also set the options for chunks in the entire document. At the top of this .Rmd, you'll see a code chunk with `opts_chunk$set()`. Any options you set inside that function will apply to all code chunks in the document.
+
+## Basics of Data Processing
+
+First, you'll need to install and load some packages. These include, but are not limited to: `tidyverse`, `tidymodels`, and `ISLR`. Make sure to install each of these using the `install.packages()` function and load them with `library()`. You'll need to uncomment the `install` lines below:
+
+```{r}
+# install.packages("tidyverse")
+# install.packages("tidymodels")
+# install.packages("ISLR")
+
+library(tidyverse)
+library(tidymodels)
+library(ISLR)
+```
+
+Some packages include datasets when they are loaded. Set `eval = TRUE` and knit your .Rmd to run the following code chunk:
+
+```{r, eval = FALSE}
+mpg
+```
+
+Run `?mpg` to learn more about this data set. 
+
+There are five key `tidyverse` functions, or "verbs." We'll go through each of them briefly with the `mpg` data set. All of these functions work similarly; their first argument is a data frame, subsequent arguments describe operations on the data frame, and the function's result is a new data frame.
+
+### Select observations by their value: `filter()`
+
+Say that you are interested in selecting only those rows in `mpg` that represent Audi compact cars. The easiest way to select them is:
+
+```{r}
+mpg %>% 
+  filter(class == "compact" & manufacturer == "audi")
+```
+
+The above code takes the `mpg` data set and pipes it into `filter()`. The pipe symbol is `%>%`; a shortcut for typing it is Cmd+Shift+M on Macs, or Cntrl+Shift+M on Windows.
+
+If you want to store the result of your filtering, you need to assign it to an object:
+
+```{r}
+filtered_mpg <- mpg %>% 
+  filter(class == "compact" & manufacturer == "audi")
+```
+
+You can use the classic comparison operators -- `!=` for not equal to, `==` for equal to, `>`, etc. They can also be used in combination with Boolean operators, as demonstrated above; `&` for "and", `|` for "or", and `!` for "not."
+
+#### Activities:
+
+On your own, find ways to filter the `flights` data set from the `nycflights13` package to achieve each of the following:
+
+- Had an arrival delay of two or more hours
+- Flew to Houston (IAH or HOU)
+- Were operated by United, American, or Delta
+- Departed in summer (July, August, and September)
+- Arrived more than two hours late, but didn’t leave late
+- Were delayed by at least an hour, but made up over 30 minutes in flight
+- Departed between midnight and 6am (inclusive)
+
+### Select specific variables or columns by their names: `select()`
+
+Often in machine learning, we end up working with very large data sets that have a lot of columns. The `mpg` data set is pretty small, but we can still practice with it.
+
+We can select the `year`, `hwy`, and `class` variables and store them in a new object, `mpg_small`, by:
+
+```{r}
+mpg_small <- mpg %>% 
+  select(year, hwy, class)
+```
+
+For a shortcut, when working with large data frames, we can use `(year:class)` or `-(year:class)` to select or de-select all columns including them and between them, respectively.
+
+Note that we use the `head()` function here so that only a few rows of the resulting tibble are displayed when we knit to .html.
+
+```{r}
+mpg %>% select(year:class) %>% 
+  head()
+
+mpg %>% select(-(year:class)) %>% 
+  head()
+```
+
+The tidyverse includes a number of helper functions that can be used inside `select()`, like `starts_with()`, etc. You can see more of them with `?select`.
+
+#### Activities
+
+On your own, working with the `flights` data:
+
+- Find as many ways as you can to select `dep_time`, `dep_delay`, `arr_time`, and `arr_delay`.
+
+- What happens if you include the name of a variable multiple times in a `select()` call?
+
+### Create or add new variables: `mutate()`
+
+Besides selecting existing columns, it’s often useful to add new columns that are functions of existing columns. That’s the job of `mutate()`.
+
+`mutate()` always adds new columns at the end of your dataset, so we'll use `select()` to reorder the columns and put the new ones at the front. `everything()` is a helper function to grab all the other variables.
+
+We can add a new column that has the value `0` for cars manufactured before $2000$ and `1` for those manufactured after $2000$ with the following code. Variables set up in this way are "dummy-coded."
+
+```{r}
+mpg %>% 
+  mutate(after_2k = if_else(year <= 2000, 0, 1)) %>% 
+  select(after_2k, year, everything()) %>% 
+  head()
+```
+
+You can see an overview of a number of useful variable creation functions here: [https://r4ds.had.co.nz/transform.html#mutate-funs](https://r4ds.had.co.nz/transform.html#mutate-funs).
+
+For an alternative to `mutate()` when you only want to retain the newly created variables, not all variables, use `transmute()`:
+
+```{r}
+transmute(mpg,
+  after_2k = if_else(year <= 2000, 0, 1)) %>% 
+  head()
+```
+
+#### Activities
+
+On your own, working with the `flights` data:
+
+- Currently `dep_time` and `sched_dep_time` are convenient to look at, but hard to compute with because they’re not really continuous numbers. Convert them to a more convenient representation of number of minutes since midnight.
+
+- What does 1:3 + 1:10 return? Why do you think it returns this?
+
+### Create grouped summaries of data frames: `summarise()`
+
+The last key verb function is `summarise()`. It's most useful when combined with `group_by()`, so that it produces a summary for each level or value of a variable/group. Notice what happens if used without grouping:
+
+```{r}
+mpg %>% 
+  summarise(avg_hwy = mean(hwy))
+```
+
+This value represents the average highway mileage across *all cars in the data frame*. We can see immediately that, while this has certainly reduced the size of the data frame, it's not very useful. Instead, we might prefer the average highway mileage by class of car, or by manufacturer. We can view these, and even `arrange()` by highway mileage:
+
+```{r}
+mpg %>% 
+  group_by(class) %>% 
+  summarise(avg_hwy = mean(hwy)) %>% 
+  arrange(avg_hwy)
+
+mpg %>% 
+  group_by(manufacturer) %>% 
+  summarise(avg_hwy = mean(hwy)) %>% 
+  arrange(avg_hwy)
+```
+
+The following code finds the average highway mileage by manufacturer, counts the number of cars produced by each manufacturer, and prints the top 10 manufacturers with largest numbers of cars, arranged by mileage:
+
+```{r}
+mpg %>% 
+  group_by(manufacturer) %>% 
+  summarise(avg_hwy = mean(hwy),
+            count = n()) %>% 
+  filter(count >= 9) %>% 
+  arrange(avg_hwy)
+```
+
+It's not demonstrated here, but you can also use other verbs like `mutate()` and `filter()` in conjunction with `group_by()`. Use `ungroup()` when you want to return to ungrouped data.
