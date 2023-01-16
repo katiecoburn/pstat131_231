@@ -138,14 +138,15 @@ them mathematically;
 \toprule
                 & \textbf{Topic}        & \textbf{Assignment}                                            & \textbf{Project Stage} \\ \midrule
 \textbf{Week 1} & Intro to ML           & Data Memo                                                               & Pick topic             \\
-\textbf{Week 2} & Feature engineering     & Homework 1 & Find data              \\
-\textbf{Week 3} & Linear \& logistic   & Homework 2                                                     & Tidy data              \\
+\textbf{Week 2} & Linear models     & Homework 1 & Find data              \\
+\textbf{Week 3} & Logistic models   & Homework 2                                                     & Tidy data              \\
 \textbf{Week 4} & Discriminant analysis & Homework 3                                                     & EDA                    \\
-\textbf{Week 5} & Regularization        & Homework 4                                                     & Run models             \\
-\textbf{Week 6} & Tree-based methods    & Homework 5                                                     &                        \\
-\textbf{Week 7} & Clustering            & Homework 6                                                     & Write-up               \\
-\textbf{Week 8} & SVMs                  &                                                                & Edits                  \\
-\textbf{Week 9} & Neural networks       & Final Project                                                  & Final draft            \\ \bottomrule
+\textbf{Week 5} & Resampling \& feature engineering &                                                   &                     \\
+\textbf{Week 6} & Regularization        & Homework 4                                                     & Run models             \\
+\textbf{Week 7} & Tree-based methods    & Homework 5                                                     &                        \\
+\textbf{Week 8} & Clustering            &                                                      & Write-up               \\
+\textbf{Week 9} & SVMs                  & Homework 6                                                               & Edits                  \\
+\textbf{Week 10} & Neural networks       & Final Project                                                  & Final draft            \\ \bottomrule
 \end{tabular}
 \end{table}
 

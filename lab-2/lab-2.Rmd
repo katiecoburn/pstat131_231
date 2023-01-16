@@ -13,123 +13,17 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE,
                       warning = FALSE)
 ```
 
-## Follow-up to Setup
-
-First, your TA(s) will check in and make sure that everyone has been able to set up R, RStudio, and GitHub correctly, and to submit their first homework assignment.
-
-Remember: Your submissions should consist of a link to a **public** GitHub repository.
-
-## Exploratory Data Analysis
-
-The first section of this lab will guide you through practicing exploratory data analysis on the dataset `diamonds` (contained in the `ggplot2` package).
-
-Make sure to load the required packages! See code below. We also load a couple other packages here for use later on.
+## Introduction: Model Fitting
 
 ```{r}
-library(ggplot2)
 library(tidyverse)
 library(tidymodels)
+library(ggplot2)
 library(corrplot)
 library(ggthemes)
+library(kableExtra)
 tidymodels_prefer()
-```
 
-### Diamonds
-
-We'll start with the `diamonds` data set. First, let's take a look at the first few lines of it, to get a feel for it:
-
-```{r}
-diamonds %>% 
-  head()
-```
-
-Think about which of these variables we might want to predict with a machine learning model. `price` makes intuitive sense; it's not something we can simply directly measure from a diamond, and we would likely be very interested in knowing how much a given diamond is worth.
-
-#### Activities:
-
-- How many observations are there in `diamonds`?
-- How many variables? Of these, how many are features we could use for predicting `price`?
-
-Run `?diamonds` and look at the variable definitions.
-
-First, let's make a correlation matrix to see which continuous variables are correlated with `price`. See example code below:
-
-```{r}
-diamonds %>% 
-  select(is.numeric) %>% 
-  cor() %>% 
-  corrplot(type = 'lower', diag = FALSE, 
-           method = 'color')
-```
-
-Take a moment and look at the arguments in the `corrplot()` function. What does each one do? What happens if you change `diag` to `TRUE` and `method` to `'square'`?
-
-#### Activities:
-
-- Which features are positively correlated with `price`? Do these make sense?
-- Are any features negatively correlated with `price`?
-- Which features are correlated with *each other*? Why do you think this might be?
-
-Let's make a boxplot of the distribution of `price` per level of `cut` and `color`, to see if there appears to be a relationship between it and these predictors.
-
-```{r}
-diamonds %>% 
-  ggplot(aes(x = price, y = reorder(cut, price), fill = color)) + 
-  geom_boxplot() +
-  labs(y = "Cut", x = "Price") +
-  theme_bw()
-```
-
-#### Activities:
-
-- What do you learn from this plot about the relationship between `price`, `cut`, and `color`?
-
-- Refer back to the definitions of the variables in `?diamonds`. Does anything you learned surprise you?
-
-Since `J` is the worst color for diamonds, why do you think they tend to cost more?
-
-Let's take a look at the relationship between `color` and `carat` to explore further. Remember from the correlation plot that `carat` is highly positively correlated with `price`.
-
-```{r}
-diamonds %>% 
-  ggplot(aes(x = carat, y = reorder(color, carat))) + 
-  geom_boxplot() +
-  theme_bw() +
-  labs(x = "Carat", y = "Color")
-```
-
-#### Activities:
-
-- Explain why lower-quality colors tend to cost more.
-
-Now we'll assess the distribution of our outcome variable `price`. Let's make a histogram:
-
-```{r}
-diamonds %>% 
-  ggplot(aes(x = price)) +
-  geom_histogram(bins = 60) +
-  theme_bw()
-```
-
-Notice that we increased the number of bins here; this allows us to get a more fine-grained picture of the distribution. `price` is positively skewed, meaning that much of the mass of its distribution is at the lower end, with a long tail to the right. Most diamonds in the data set are worth less than $\$10,000$.
-
-#### Activities:
-
-- Create a single plot to visualize the relationship between `cut`, `carat`, and `price`.
-
-## Data Splitting
-
-Now we're going to walk through the process of splitting the `diamonds` data set into two, a training set and a test set. Note that in the future, after we discuss the concept of resampling, we'll use a resampling technique called cross-validation, but for now, we'll work with the entire training set. (This approach is also known as a "validation set" approach.)
-
-We also could have performed this split prior to doing exploratory data analysis, and in future we'll split data first. That's arguably better practice because it means we will have never encountered the test observations before we fit a final model to them.
-
-The textbook(s) describe a way to split data using base R functions, but `tidymodels` makes the process a little easier.
-
-We set a seed first because the splitting process is random. If we don't set a seed, each time we re-run the code we'll get a new random split, and the results will not be identical.
-
-In general, set a seed to whatever number you like. People often use birthdates, anniversaries, or lucky numbers, etc. Just make sure you remember the number, because you'll need to set the seed to that number to reproduce your split in future.
-
-```{r}
 set.seed(3435)
 
 diamonds_split <- initial_split(diamonds, prop = 0.80,
@@ -137,14 +31,6 @@ diamonds_split <- initial_split(diamonds, prop = 0.80,
 diamonds_train <- training(diamonds_split)
 diamonds_test <- testing(diamonds_split)
 ```
-
-#### Activities:
-
-- How many observations are now in the training and testing sets, respectively? Report the exact number, not proportion.
-
-- What do you think the `strata = price` argument does? Take a guess, then use `?initial_split` to verify.
-
-## Linear Regression
 
 ### Creating a Recipe
 
@@ -174,9 +60,25 @@ diamonds_recipe <- recipe(price ~ ., data = diamonds_train) %>%
 
 Note that we haven't specified what type of model we'll be fitting yet. The other beauty of the recipe is that it can then be directly given to one of many machine learning model "engines."
 
+Running the above code is essentially like writing down the instructions for a recipe on a sheet of paper. We've prepared the recipe to give to the workflow, but we are probably interested in seeing what the results of the recipe itself actually look like. Did the dummy coding work, for example? To apply the recipe to a data set and view the results, we can use `prep()`, which is akin to setting out a *mise en place* of ingredients, and `bake()`.
+
+We'll also use `kbl()` and `kable_styling()` from the [`kableExtra` package](https://cran.r-project.org/web/packages/kableExtra/vignettes/awesome_table_in_html.html), which we installed above. It's not necessary to use these functions, but doing so allows the table of data to display more neatly, so that all the columns and rows are actually legible. We also use `head()` to select only the first few rows; otherwise the entire data frame would print, which would be time-consuming. Also note the use of `scroll_box()`, allowing us to scroll through the entire data set.
+
+```{r}
+prep(diamonds_recipe) %>% 
+  bake(new_data = diamonds_train) %>% 
+  head() %>% 
+  kable() %>% 
+  kable_styling(full_width = F) %>% 
+  scroll_box(width = "100%", height = "200px")
+```
+
+
 #### Activities:
 
 - Use the Internet to find documentation about the possible `step` functions. Name three `step` functions that weren't used here and describe what they do.
+
+## Linear Regression
 
 Next, we can specify the model engine that we want to fit:
 
@@ -215,8 +117,6 @@ lm_fit %>%
 
 - Describe the effect of `carat`. Is it a significant predictor of `price`? Holding everything else constant, what is the effect on `price` of a one-unit increase in `carat`?
 
-Finally, we can calculate the **training** root mean squared error (RMSE).
-
 The following code generates predicted values for `price` for each observation in the training set:
 
 ```{r}
@@ -233,7 +133,7 @@ diamond_train_res %>%
   head()
 ```
 
-We might be interested in a plot of predicted values vs. actual values:
+We might be interested in a plot of predicted values vs. actual values, here for the training data:
 
 ```{r}
 diamond_train_res %>% 
@@ -246,12 +146,16 @@ diamond_train_res %>%
 
 It's fairly clear that the model didn't do very well. If it predicted every observation accurately, the dots would form a straight line. We also have predicted some negative values for price, and once the actual price is approximately over $\$5,000$, the model does a pretty poor job.
 
-The odds are that a linear model is simply not the best tool for this machine learning task. It is likely not an accurate representation of `f()`.
+The odds are that a linear model is simply not the best tool for this machine learning task. It is likely not an accurate representation of `f()`; remember that by using a linear regression, we are imposing a specific form on the function, rather than learning the function from the data.
 
-In future labs, we'll try out different models and compare them. For now, let's get the linear model's RMSE on the training data as a baseline.
+In future labs, we'll try out different models and compare them. Finally, we can calculate the **training** root mean squared error (RMSE) and the **testing** RMSE.
 
 ```{r}
+diamond_test_res <- predict(lm_fit, new_data = diamonds_test %>% select(-price))
+diamond_test_res <- bind_cols(diamond_test_res, diamonds_test %>% select(price))
+  
 rmse(diamond_train_res, truth = price, estimate = .pred)
+rmse(diamond_test_res, truth = price, estimate = .pred)
 ```
 
 We can create and view a "metric set" of RMSE, MSE, and $R^2$ as shown:
@@ -260,7 +164,79 @@ We can create and view a "metric set" of RMSE, MSE, and $R^2$ as shown:
 diamond_metrics <- metric_set(rmse, rsq, mae)
 diamond_metrics(diamond_train_res, truth = price, 
                 estimate = .pred)
+diamond_metrics(diamond_test_res, truth = price,
+                estimate = .pred)
 ```
+
+#### Activities:
+
+- Is there a difference between the three metrics for the training data and the testing data?
+
+- Do your best to explain why this difference does (or does not) exist.
+
+## *k*-Nearest Neighbors
+
+Now we'll take the recipe we've already created and try fitting a KNN [(*k*-nearest neighbors)](https://parsnip.tidymodels.org/reference/nearest_neighbor.html) model with it! To do this, we'll use the `nearest_neighbor()` function, rather than the `linear_reg()` function, but we'll still need to select an engine. There is only one *R* package, or engine, that works with `nearest_neighbor()`, and that is the `kknn` package.
+
+![](images/parsnip.png){width="363"}
+
+To use an engine, we must make sure that the related package is installed and loaded on our machine. The code to do that is below -- however, remember that you must keep the `install_packages()` line commented out to successfully knit this file.
+
+```{r}
+# install.packages("kknn")
+library(kknn)
+
+knn_model <- nearest_neighbor() %>% 
+  set_engine("kknn")
+```
+
+Unlike a linear regression, however, there is a parameter -- more specifically, a *hyperparameter* -- that we have to set to fit a *k*-nearest neighbors model. That hyperparameter is `k` -- the number of neighbors for the model to consider.
+
+How do we know the "right" or the optimal value of `k` to use? Well, we don't! Eventually we'll discuss the concepts of resampling, cross-validation, and tuning, which will allow us to determine the optimal value of a hyperparameter with relative ease. For now, we'll go with the default value of `k`.
+
+#### Activities:
+
+- What IS the default value of `k` here, if we do not specify a value? How did you find out?
+
+Now we add the model and recipe to the workflow and fit the model to the training data set:
+
+```{r}
+knn_wflow <- workflow() %>% 
+  add_model(knn_model) %>% 
+  add_recipe(diamonds_recipe)
+
+knn_fit <- fit(knn_wflow, diamonds_train)
+```
+
+Trying to view the results, as we did with the linear regression, is not very informative:
+
+```{r}
+knn_fit %>% 
+  extract_fit_parsnip()
+```
+
+It tells us that the "best" value of `k` is 5, but that is also because it's the only value we tried, so it doesn't mean much.
+
+We'll generate the predictions from this model for the training set and testing set, and then compare the metrics for each, as before:
+
+```{r}
+diamond_train_knn <- predict(knn_fit, new_data = diamonds_train %>% select(-price))
+diamond_train_knn <- bind_cols(diamond_train_knn, diamonds_train %>% select(price))
+
+diamond_test_knn <- predict(knn_fit, new_data = diamonds_test %>% select(-price))
+diamond_test_knn <- bind_cols(diamond_test_knn, diamonds_test %>% select(price))
+
+diamond_metrics(diamond_train_knn, truth = price, 
+                estimate = .pred)
+diamond_metrics(diamond_test_knn, truth = price,
+                estimate = .pred)
+```
+
+#### Activities:
+
+- Which of the two models -- linear regression or *k*-nearest neighbors -- performed better on the testing data? Why do you think this is so?
+
+- What do you think explains the difference between the training and testing metrics for the KNN model?
 
 ## Resources
 
