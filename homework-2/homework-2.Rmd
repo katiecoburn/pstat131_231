@@ -13,9 +13,9 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE,
                       warning = FALSE)
 ```
 
-## Linear Regression
+## Linear Regression and KNN
 
-For this lab, we will be working with a data set from the UCI (University of California, Irvine) Machine Learning repository ([see website here](http://archive.ics.uci.edu/ml/datasets/Abalone)). The full data set consists of $4,177$ observations of abalone in Tasmania. (Fun fact: [Tasmania](https://en.wikipedia.org/wiki/Tasmania "Tasmania") supplies about $25\%$ of the yearly world abalone harvest.)
+For this assignment, we will be working with a data set from the UCI (University of California, Irvine) Machine Learning repository ([see website here](http://archive.ics.uci.edu/ml/datasets/Abalone)). The full data set consists of $4,177$ observations of abalone in Tasmania. (Fun fact: [Tasmania](https://en.wikipedia.org/wiki/Tasmania "Tasmania") supplies about $25\%$ of the yearly world abalone harvest.)
 
 ![*Fig 1. Inside of an abalone shell.*](https://cdn.shopify.com/s/files/1/1198/8002/products/1d89434927bffb6fd1786c19c2d921fb_2000x_652a2391-5a0a-4f10-966c-f759dc08635c_1024x1024.jpg?v=1582320404){width="152"}
 
@@ -39,7 +39,7 @@ Split the abalone data into a training set and a testing set. Use stratified sam
 
 ### Question 3
 
-Using the **training** data, create a recipe predicting the outcome variable, `age`, with all other predictor variables. Note that you should not include `rings` to predict `age`. Explain why you shouldn't use `rings` to predict `age`.
+Using the **training** data, create a recipe predicting the outcome variable, `age`, with all other predictor variables. Note that you **should not** include `rings` to predict `age`. *Explain why you shouldn't use `rings` to predict `age`.*
 
 Steps for your recipe:
 
@@ -50,7 +50,7 @@ Steps for your recipe:
     -   `type` and `shucked_weight`,
     -   `longest_shell` and `diameter`,
     -   `shucked_weight` and `shell_weight`
-    
+
 3.  center all predictors, and
 
 4.  scale all predictors.
@@ -63,23 +63,37 @@ Create and store a linear regression object using the `"lm"` engine.
 
 ### Question 5
 
-Now:
-
-1.  set up an empty workflow,
-2.  add the model you created in Question 4, and
-3.  add the recipe that you created in Question 3.
+Create and store a KNN object using the `"kknn"` engine. Specify `k = 7`.
 
 ### Question 6
 
-Use your `fit()` object to predict the age of a hypothetical female abalone with longest_shell = 0.50, diameter = 0.10, height = 0.30, whole_weight = 4, shucked_weight = 1, viscera_weight = 2, shell_weight = 1.
+Now, for each of these models (linear regression and KNN):
+
+1.  set up an empty workflow,
+2.  add the model, and
+3.  add the recipe that you created in Question 3.
+
+Note that you should be setting up two separate workflows.
+
+Fit both models to the training set.
 
 ### Question 7
 
-Now you want to assess your model's performance. To do this, use the `yardstick` package:
+Use your linear regression `fit()` object to predict the age of a hypothetical female abalone with longest_shell = 0.50, diameter = 0.10, height = 0.30, whole_weight = 4, shucked_weight = 1, viscera_weight = 2, and shell_weight = 1.
+
+### Question 8
+
+Now you want to assess your models' performance. To do this, use the `yardstick` package:
 
 1.  Create a metric set that includes *R^2^*, RMSE (root mean squared error), and MAE (mean absolute error).
-2.  Use `predict()` and `bind_cols()` to create a tibble of your model's predicted values from the **training data** along with the actual observed ages (these are needed to assess your model's performance).
-3.  Finally, apply your metric set to the tibble, report the results, and interpret the *R^2^* value.
+2.  Use `predict()` and `bind_cols()` to create a tibble of your model's predicted values from the **testing data** along with the actual observed ages (these are needed to assess your model's performance).
+3.  Finally, apply your metric set to the tibble, report the results, and interpret the *R\^2* value.
+
+Repeat these steps once for the linear regression model and for the KNN model.
+
+### Question 9
+
+Which model performed better on the testing data? Explain why you think this might be. Are you surprised by any of your results? Why or why not?
 
 ### Required for 231 Students
 
@@ -91,23 +105,23 @@ $$
 
 where the underlying model $Y=f(X)+\epsilon$ satisfies the following:
 
-- $\epsilon$ is a zero-mean random noise term and $X$ is non-random (all randomness in $Y$ comes from $\epsilon$);
-- $(x_0, y_0)$ represents a test observation, independent of the training set, drawn from the same model;
-- $\hat{f}(.)$ is the estimate of $f$ obtained from the training set.
+-   $\epsilon$ is a zero-mean random noise term and $X$ is non-random (all randomness in $Y$ comes from $\epsilon$);
+-   $(x_0, y_0)$ represents a test observation, independent of the training set, drawn from the same model;
+-   $\hat{f}(.)$ is the estimate of $f$ obtained from the training set.
 
-#### Question 8
+#### Question 10
 
 Which term(s) in the bias-variance tradeoff above represent the reproducible error? Which term(s) represent the irreducible error?
 
-#### Question 9
+#### Question 11
 
 Using the bias-variance tradeoff above, demonstrate that the expected test error is always at least as large as the irreducible error.
 
-#### Question 10
+#### Question 12
 
 Prove the bias-variance tradeoff.
 
 Hints:
 
-- use the definition of $Bias(\hat{f}(x_0))=E[\hat{f}(x_0)]-f(x_0)$;
-- reorganize terms in the expected test error by adding and subtracting $E[\hat{f}(x_0)]$
+-   use the definition of $Bias(\hat{f}(x_0))=E[\hat{f}(x_0)]-f(x_0)$;
+-   reorganize terms in the expected test error by adding and subtracting $E[\hat{f}(x_0)]$

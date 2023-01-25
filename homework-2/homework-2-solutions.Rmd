@@ -13,9 +13,9 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE,
                       warning = FALSE)
 ```
 
-## Linear Regression
+## Linear Regression and KNN
 
-For this lab, we will be working with a data set from the UCI (University of California, Irvine) Machine Learning repository ([see website here](http://archive.ics.uci.edu/ml/datasets/Abalone)). The full data set consists of $4,177$ observations of abalone in Tasmania. (Fun fact: [Tasmania](https://en.wikipedia.org/wiki/Tasmania "Tasmania") supplies about $25\%$ of the yearly world abalone harvest.)
+For this assignment, we will be working with a data set from the UCI (University of California, Irvine) Machine Learning repository ([see website here](http://archive.ics.uci.edu/ml/datasets/Abalone)). The full data set consists of $4,177$ observations of abalone in Tasmania. (Fun fact: [Tasmania](https://en.wikipedia.org/wiki/Tasmania "Tasmania") supplies about $25\%$ of the yearly world abalone harvest.)
 
 ![*Fig 1. Inside of an abalone shell.*](https://cdn.shopify.com/s/files/1/1198/8002/products/1d89434927bffb6fd1786c19c2d921fb_2000x_652a2391-5a0a-4f10-966c-f759dc08635c_1024x1024.jpg?v=1582320404){width="152"}
 
@@ -159,6 +159,8 @@ multi_metric(abalone_predict, truth = age, estimate = .pred)
 ```
 
 *The* $R^2$ value here is pretty low; it means that only about $55\%$ of variation in abalone age was explained by the model. This is likely because the relationship between age and the predictors is not necessarily linear. If you're interested, suggest running some linear regression diagnostics to assess.
+
+NOTE TO SELF: ADD A KNN REGRESSION EXAMPLE PROBLEM HERE
 
 ### Required for 231 Students
 

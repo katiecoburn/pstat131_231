@@ -160,7 +160,7 @@ If we try a threshold of $0.001310378$, the first value in the previous table, w
 
 ```{r}
 augment(log_test_a, new_data = titanic_test) %>% 
-  mutate(.pred_class = if_else(.pred_Yes < 0.001310378, "No", "Yes")) %>% 
+  mutate(.pred_class = if_else(.pred_Yes < 0.001310378, "No", "Yes")) %>%
   conf_mat(truth = survived, estimate = .pred_class) %>% 
   autoplot(type = "heatmap")
 ```
