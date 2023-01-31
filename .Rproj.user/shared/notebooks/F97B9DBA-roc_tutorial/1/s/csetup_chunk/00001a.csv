@@ -1,5 +1,0 @@
-"0","knitr::opts_chunk$set(echo = TRUE, message = FALSE,"
-"0","                      warning = FALSE)"
-"0","library(colorfindr) # extracts colors from images"
-"0",""
-"0","spec_colors <- c(""#010101"", ""#182551"", ""#25325F"", ""#D7D9D8"", ""#6F6F6F"")"

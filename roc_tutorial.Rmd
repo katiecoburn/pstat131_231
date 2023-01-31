@@ -1,7 +1,6 @@
 ---
 title: 'ROC Curves: An Overview'
 author: "PSTAT 131/231"
-date: "2022-10-19"
 output:
   html_document:
     code_folding: hide
@@ -18,7 +17,9 @@ spec_colors <- c("#010101", "#182551", "#25325F", "#D7D9D8", "#6F6F6F")
 
 #### Data
 
-For this, we'll use the Titanic dataset, as seen in Homework 3. We load in the data below and perform any necessary steps -- converting variables to factors as needed, loading the appropriate packages, etc.:
+For this, we'll use part of a [Kaggle data set](https://www.kaggle.com/c/titanic/overview) that was the subject of a machine learning competition and is often used for practicing ML models. The goal is classification; specifically, to predict which passengers would survive the [Titanic shipwreck](https://en.wikipedia.org/wiki/Titanic).
+
+We load in the data below and perform any necessary steps -- converting variables to factors as needed, loading the appropriate packages, etc.:
 
 ```{r}
 library(tidyverse)
@@ -47,7 +48,7 @@ We split the data into training and testing sets, and choose to include $70\%$ o
 
 Now we'll create recipes, and here we are going to specify two recipes -- one that will do pretty well predicting the outcome, and one that won't.
 
-The recipe described in Homework 3 will do a fairly good job, so we'll use that for what we'll call Recipe A:
+The recipe we'll fit in Homework 3 will do a fairly good job, so we'll use that for what we'll call Recipe A:
 
 [Recipe A:]{.underline}
 
@@ -60,7 +61,7 @@ titanic_recipe_a <- recipe(survived ~ pclass + sex + age +
   step_interact(~ starts_with("sex"):age + age:fare)
 ```
 
-For Recipe B, we will attempt to predict passenger survival with only `sib_sp`, the number of siblings or spouses on board:
+For Recipe B, we will attempt to predict passenger survival with only `sib_sp`, the number of siblings or spouses on board. The goal of this demonstration is to compare an intentionally bad model (Recipe B) to one that is relatively good (Recipe A).
 
 [Recipe B:]{.underline}
 
@@ -112,7 +113,7 @@ results <- bind_rows(log_acc_a, log_acc_b) %>%
 results
 ```
 
-As expected, Model A has higher accuracy than Model B.
+As expected, Model A has higher accuracy than Model B, and has performed better on the training data.
 
 We'll fit both of these to the testing data, and then we'll explore their ROC curves.
 
@@ -160,7 +161,7 @@ If we try a threshold of $0.001310378$, the first value in the previous table, w
 
 ```{r}
 augment(log_test_a, new_data = titanic_test) %>% 
-  mutate(.pred_class = if_else(.pred_Yes < 0.001310378, "No", "Yes")) %>%
+  mutate(.pred_class = factor(if_else(.pred_Yes < 0.001310378, "No", "Yes"), levels = c("Yes", "No"))) %>%
   conf_mat(truth = survived, estimate = .pred_class) %>% 
   autoplot(type = "heatmap")
 ```
@@ -186,7 +187,7 @@ Let's look at the default threshold value for a binary classification problem, a
 
 ```{r}
 augment(log_test_a, new_data = titanic_test) %>% 
-  mutate(.pred_class = if_else(.pred_Yes < 0.5, "No", "Yes")) %>% 
+  mutate(.pred_class = factor(if_else(.pred_Yes < 0.5, "No", "Yes"), levels = c("Yes", "No"))) %>% 
   conf_mat(truth = survived, estimate = .pred_class) %>% 
   autoplot(type = "heatmap")
 ```
@@ -209,7 +210,8 @@ log_a_results %>%
   ggplot(aes(x = .pred_Yes, fill = survived)) + 
   geom_histogram(position = "dodge") +
  theme_bw() +
-  xlab("Probability of Yes")
+  xlab("Probability of Yes") +
+  scale_fill_manual(values = c("blue", "orange"))
 ```
 
 ```{r}
@@ -217,7 +219,8 @@ log_a_results %>%
   ggplot(aes(x = .pred_Yes, fill = survived)) + 
   geom_boxplot() +
 theme_bw() +
-  xlab("Probability of Yes")
+  xlab("Probability of Yes") +
+  scale_fill_manual(values = c("blue", "orange"))
 ```
 
 #### Model B: ROC Curve:
@@ -269,7 +272,8 @@ Here, the model has only tried nine potential thresholds. Why is that?
 log_b_results %>% 
   ggplot(aes(x = .pred_Yes, fill = survived)) + 
   geom_histogram(position = "dodge")  + theme_bw() +
-  xlab("Probability of Yes")
+  xlab("Probability of Yes") +
+  scale_fill_manual(values = c("blue", "orange"))
 ```
 
 The threshold values are selected as a grid over the range of observed predicted probabilities. This model has not predicted any observation's probability of Yes as greater than $0.4076525$ ... which, coincidentally, is the largest threshold value considered in its ROC curve. That's because considering any larger values for the threshold would give the same results as `Inf`. We can also view this information as a boxplot, which really serves to illustrate the overlap:
@@ -278,16 +282,16 @@ The threshold values are selected as a grid over the range of observed predicted
 log_b_results %>% 
   ggplot(aes(x = .pred_Yes, fill = survived)) + 
   geom_boxplot()  + theme_bw() +
-  xlab("Probability of Yes")
+  xlab("Probability of Yes") +
+  scale_fill_manual(values = c("blue", "orange"))
 ```
 
 With that in mind, let's focus on a threshold value of, say, $0.4076525$. Remember that we want to maximize sensitivity and minimize the false positive rate, or minimize 1 - specificity. At a threshold of $0.4076525$, the confusion matrix looks like:
 
 ```{r}
 log_b_results %>% 
-  mutate(pred_class = if_else(.pred_Yes <= 0.4076524, "No", "Yes")) %>% 
-  select(survived, pred_class) %>%
-  conf_mat(truth = survived, estimate = pred_class) %>% 
+  mutate(.pred_class = factor(if_else(.pred_Yes <= 0.4076524, "No", "Yes"), levels = c("Yes", "No"))) %>% 
+  conf_mat(truth = survived, estimate = .pred_class) %>% 
   autoplot(type = "heatmap")
 ```
 
