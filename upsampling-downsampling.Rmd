@@ -1,0 +1,30 @@
+---
+title: "Handling Imbalanced Data"
+author: "PSTAT 131"
+date: "2023-01-30"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE,
+                      warning = FALSE)
+```
+
+## R Markdown
+
+```{r}
+library(tidymodels)
+library(ISLR) # For the Smarket data set
+library(ISLR2) # For the Bikeshare data set
+library(corrr)
+library(corrplot)
+tidymodels_prefer()
+```
+
+For this example, we'll take a look at the `Default` data, which comes with the `ISLR` or `ISLR2` package.
+```{r}
+Default %>% 
+  ggplot(aes(x = default)) +
+  geom_bar()
+```
+

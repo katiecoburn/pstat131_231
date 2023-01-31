@@ -1,5 +1,0 @@
-"0","nb_fit <- fit(nb_wkflow, smarket_train)
-"
-"2","Error: This engine requires some package installs: 'klaR'
-[90mRun `rlang::last_error()` to see where the error occurred.[39m
-"

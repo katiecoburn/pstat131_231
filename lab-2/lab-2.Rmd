@@ -54,7 +54,7 @@ More specifically, we see that there are 9 predictors.
 We should dummy-code all categorical predictors. We can do that easily with `step` functions:
 
 ```{r}
-diamonds_recipe <- recipe(price ~ ., data = diamonds_train) %>% 
+diamonds_recipe <- recipe(price ~ ., data = diamonds_train) %>%
   step_dummy(all_nominal_predictors())
 ```
 

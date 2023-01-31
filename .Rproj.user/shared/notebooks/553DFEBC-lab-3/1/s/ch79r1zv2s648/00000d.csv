@@ -1,6 +1,0 @@
-"0","cor_Smarket <- Smarket %>%
-  select(-c(Direction)) %>%
-  correlate()
-"
-"2","Error in select(., -c(Direction)) : unused argument (-c(Direction))
-"

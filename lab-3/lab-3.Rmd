@@ -28,19 +28,22 @@ library(ISLR2) # For the Bikeshare data set
 library(discrim)
 library(poissonreg)
 library(corrr)
+library(corrplot)
 library(klaR) # for naive bayes
 tidymodels_prefer()
 ```
 
 ### Data
 
-We will be examining the `Smarket` data set for this lab. It contains a number of numeric variables, plus a variable called `Direction` which has two labels, "Up" and "Down". Before we go on to modeling, we'll explore the data a little, at least to look at possible correlations between the variables.
+We'll start out by working with the `Smarket` data set for this lab, which contains daily percentage returns for the S&P 500 stock index between 2001 and 2005. It contains 1,250 observations on 8 numeric variables, plus a factor variable called `Direction` which has two levels, "Up" and "Down".
+
+Before we go on to modeling, we'll explore the data a little, at least to look at possible correlations between the variables. `Direction` is our outcome variable of interest; we'll attempt to predict it using the volume of shares traded (`Volume`) and the five lag variables (which represent the percentage return for the previous days).
 
 #### Activities
 
 - Access the help page for `Smarket`. What does the `Direction` variable represent? What predictors do you think might be correlated with it?
 
-To look at correlations among the continuous variables, we will use the `corrr` package. The `correlate()` function will calculate the correlation matrix between all the variables that it is given. We choose to remove `Direction,` as it is not numeric. Then we pass the results to rplot() to visualize the correlation matrix.
+To look at correlations among the continuous variables, we'll try using the `corrr` package. The `correlate()` function will calculate the correlation matrix between all the variables that it is given. We choose to remove `Direction,`  it is not numeric. Then we pass the results to `rplot()` to visualize the correlation matrix.
 
 ```{r}
 cor_Smarket <- Smarket %>%
@@ -55,7 +58,7 @@ rplot(cor_Smarket)
 - Do you need to worry about predictors being highly linearly correlated with each other?
 - Does this matrix tell you anything about relationships between predictors and the outcome?
 
-We can also use `ggplot` and the `geom_tile()` function to create a heatmap-style correlation plot, with a few more lines of code:
+We could also use `ggplot` and the `geom_tile()` function to create a heatmap-style correlation plot, with a few more lines of code:
 
 ```{r}
 cor_Smarket %>%
@@ -65,9 +68,18 @@ cor_Smarket %>%
   geom_text(aes(label = as.character(fashion(r))))
 ```
 
-Notice that the upper and lower triangles of the matrix are identical; that's a common feature of correlation matrices. The grey squares represent the variances of the variables. Again, we see that only `Year` and `Volume` have much of any correlation with each other, and it's only about $0.55$.
+Or we could use the function from a previous lab, `corrplot()`:
 
-Let's investigate that correlation! Here's a plot of `Volume` by `Year`:
+```{r}
+Smarket %>% 
+  select(-Direction) %>% 
+  cor() %>% 
+  corrplot()
+```
+
+Notice that the upper and lower triangles of the matrix are identical; that's a common feature of correlation matrices. Again, we see that only `Year` and `Volume` have much of any correlation with each other, and it's only about $0.54$.
+
+Let's investigate that correlation a little further. Here's a boxplot of `Volume` by `Year`:
 
 ```{r}
 ggplot(Smarket, aes(factor(Year), Volume)) +
@@ -86,10 +98,23 @@ Lastly, it's worth looking at the distribution of our outcome variable.
 Smarket %>% 
   ggplot(aes(x = Direction)) +
   geom_bar()
+
+OJ %>% 
+  ggplot(aes(x = Purchase)) +
+  geom_bar()
 ```
 
+When we're working with a categorical outcome, we are often interested in whether the levels of our outcome are *balanced*, meaning whether the count of observations at one level is approximately equal to the count at the other level(s). 
 
-Now we'll split the data, stratifying on the outcome, `Direction`:
+```{r}
+Smarket %>% 
+  select(Direction) %>% 
+  table()
+```
+
+Here, there are 602 `Down` observations and 648 `Up`. These aren't exactly equal, but this data set is fairly balanced. We can probably safely assume that this minor difference in counts won't affect model performance.
+
+We'll split the data, stratifying on the outcome, `Direction`. Stratifying on the outcome ensures that the proportion of observations with each level of the outcome will be approximately the same for each random sample, training and testing.
 
 ```{r}
 set.seed(3435)
@@ -323,20 +348,18 @@ results %>%
 
 ## Fitting to Testing Data
 
-Since the Naive Bayes model performed slightly better, we'll go ahead and fit it to the testing data. In future weeks, we'll cover how to use cross-validation to try out different values for models' tuning parameters, but for now, this is a general overview of the process.
+Since the naive Bayes model performed slightly better, we'll go ahead and fit it to the testing data. Note that what we are doing -- that is, selecting a model based on its *training accuracy* -- is not ideal practice, as we've discussed in class. The model with the highest training accuracy is not guaranteed to have high testing accuracy.
 
-```{r}
-predict(nb_fit, new_data = smarket_test, type = "prob")
-```
+In future weeks, we'll cover how to use cross-validation to get an estimate of our models' performance on *testing data* and use that estimate for selecting a model instead. We choose based on training accuracy here because we haven't discussed cross-validation yet. Choosing a model based on training performance is *not a good idea in general*.
 
-We can view the confusion matrix on the **testing** data:
+Since we've chosen a model -- naive Bayes -- we can view its confusion matrix using the **testing** data:
 
 ```{r}
 augment(nb_fit, new_data = smarket_test) %>%
   conf_mat(truth = Direction, estimate = .pred_class) 
 ```
 
-We can also look at the **testing** accuracy. Here, we add two other metrics, sensitivity and specificity, out of curiosity:
+We can also look at its **testing** accuracy. Here, we add two other metrics, sensitivity and specificity, out of curiosity:
 
 ```{r}
 multi_metric <- metric_set(accuracy, sensitivity, specificity)
@@ -348,7 +371,7 @@ augment(nb_fit, new_data = smarket_test) %>%
 Finally, let's look at an ROC curve on the testing data:
 
 ```{r}
-augment(nb_fit, new_data = smarket_test) %>%
+augment(lda_fit, new_data = smarket_test) %>%
   roc_curve(Direction, .pred_Down) %>%
   autoplot()
 ```
@@ -358,7 +381,6 @@ augment(nb_fit, new_data = smarket_test) %>%
 - What do the sensitivity and specificity values mean? Interpret them in terms of the concepts and data.
 - How well did the model perform on the **testing** data?
 - Why do you think the model performed like it did?
-- Do you think we could have done the initial split differently? Is there anything about the structure of the data that could inform the training/testing split?
 
 ## Resources
 

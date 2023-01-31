@@ -111,7 +111,7 @@ where the underlying model $Y=f(X)+\epsilon$ satisfies the following:
 
 #### Question 10
 
-Which term(s) in the bias-variance tradeoff above represent the reproducible error? Which term(s) represent the irreducible error?
+Which term(s) in the bias-variance tradeoff above represent the reducible error? Which term(s) represent the irreducible error?
 
 #### Question 11
 

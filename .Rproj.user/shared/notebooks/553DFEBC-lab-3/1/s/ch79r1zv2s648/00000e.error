@@ -1,1 +1,0 @@
-{"frames":[{"func":"Smarket %>% select(-c(Direction)) %>% correlate()","file":"","line_number":0,"end_line_number":0,"character_number":0,"end_character_number":0},{"func":"correlate(.)","file":"","line_number":0,"end_line_number":0,"character_number":0,"end_character_number":0}],"message":"Error in select(., -c(Direction)) : unused argument (-c(Direction))\n"}
