@@ -1,5 +1,5 @@
 ---
-title: "Lab 3: Classification"
+title: "Lab 3: Intro to Binary Classification"
 author: "PSTAT 131/231"
 output:
     html_document:
@@ -39,11 +39,15 @@ We'll start out by working with the `Smarket` data set for this lab, which conta
 
 Before we go on to modeling, we'll explore the data a little, at least to look at possible correlations between the variables. `Direction` is our outcome variable of interest; we'll attempt to predict it using the volume of shares traded (`Volume`) and the five lag variables (which represent the percentage return for the previous days).
 
+The other data set we'll work with for this lab is the `OJ`, or Orange Juice, data set. It contains 1,070 observations, each of which represents a customer's purchase of either Citrus Hill or Minute Maid Orange Juice. `Purchase` is our outcome variable, which indicates the brand purchased. We'll attempt to predict it using the prices charged for each brand, the discounts offered, and a metric of customer loyalty.
+
 #### Activities
 
-- Access the help page for `Smarket`. What does the `Direction` variable represent? What predictors do you think might be correlated with it?
+-   Access the help page for `Smarket`. What does the `Direction` variable represent? What predictors do you think might be correlated with it?
 
-To look at correlations among the continuous variables, we'll try using the `corrr` package. The `correlate()` function will calculate the correlation matrix between all the variables that it is given. We choose to remove `Direction,`  it is not numeric. Then we pass the results to `rplot()` to visualize the correlation matrix.
+-   Access the help page for `OJ` and familiarize yourself with it.
+
+To look at correlations among the continuous variables, we'll try using the `corrr` package. The `correlate()` function will calculate the correlation matrix between all the variables that it is given. We choose to remove `Direction,` it is not numeric. Then we pass the results to `rplot()` to visualize the correlation matrix.
 
 ```{r}
 cor_Smarket <- Smarket %>%
@@ -54,9 +58,9 @@ rplot(cor_Smarket)
 
 #### Activities
 
-- What do you notice from this correlation matrix?
-- Do you need to worry about predictors being highly linearly correlated with each other?
-- Does this matrix tell you anything about relationships between predictors and the outcome?
+-   What do you notice from this correlation matrix?
+-   With this data set, do you need to worry about predictors being highly linearly correlated with each other?
+-   Does this matrix tell you anything about relationships between predictors and the outcome?
 
 We could also use `ggplot` and the `geom_tile()` function to create a heatmap-style correlation plot, with a few more lines of code:
 
@@ -88,23 +92,31 @@ ggplot(Smarket, aes(factor(Year), Volume)) +
   xlab("Year")
 ```
 
+We'll also consider a correlation plot for the orange juice data, restricting our analysis to the continuous predictor variables we'll be including:
+
+```{r}
+OJ %>% 
+  select(PriceCH, PriceMM, DiscCH, DiscMM,
+         LoyalCH, PctDiscMM, PctDiscCH) %>% 
+  cor() %>% 
+  corrplot(type = "lower", diag = F)
+```
+
+Here, we set `diag = F` and `type = 'lower'`, which simplifies the plot a bit and may make it easier to read. We can practice interpreting these correlations; for example, `PriceMM` and `PriceCH` are positively correlated. This implies that higher prices for one brand of orange juice are correlated with higher prices for the other, and makes sense; when orange juice in general is cheaper to make, both brands would lower their prices, and vice versa.
+
 #### Activities
 
-- Describe the relationship between `Year` and `Volume`.
+-   Describe the relationship between `Year` and `Volume`.
 
-Lastly, it's worth looking at the distribution of our outcome variable.
+Lastly, it's worth looking at the distribution of our outcome variables.
 
 ```{r}
 Smarket %>% 
   ggplot(aes(x = Direction)) +
   geom_bar()
-
-OJ %>% 
-  ggplot(aes(x = Purchase)) +
-  geom_bar()
 ```
 
-When we're working with a categorical outcome, we are often interested in whether the levels of our outcome are *balanced*, meaning whether the count of observations at one level is approximately equal to the count at the other level(s). 
+When we're working with a categorical outcome, we are often interested in whether the levels of our outcome are *balanced*, meaning whether the count of observations at one level is approximately equal to the count at the other level(s).
 
 ```{r}
 Smarket %>% 
@@ -112,28 +124,47 @@ Smarket %>%
   table()
 ```
 
-Here, there are 602 `Down` observations and 648 `Up`. These aren't exactly equal, but this data set is fairly balanced. We can probably safely assume that this minor difference in counts won't affect model performance.
+Here, there are 602 `Down` observations and 648 `Up`. These aren't exactly equal, but the `Smarket` data set is fairly **balanced**. We can probably safely assume that this minor difference in counts won't affect model performance.
 
-We'll split the data, stratifying on the outcome, `Direction`. Stratifying on the outcome ensures that the proportion of observations with each level of the outcome will be approximately the same for each random sample, training and testing.
+```{r}
+OJ %>% 
+  ggplot(aes(x = Purchase)) +
+  geom_bar()
+OJ %>% 
+  select(Purchase) %>% 
+  table()
+```
+
+The orange juice data set is definitely somewhat unbalanced; the Citrus Hill brand appears to be more popular overall, with 653 observations representing customers purchasing Citrus Hill and only 417 Minute Maid. For now, we won't adjust for this, but we'll discuss methods of **upsampling** and **downsampling** in next week's lab. Also, note that this is by no means the most extreme example of an unbalanced outcome; some outcomes have incredibly rare levels.
+
+We'll split each data set, stratifying on the outcomes, `Direction` and `Purchase`. Stratifying on the outcome ensures that the proportion of observations with each level of the outcome will be approximately the same for each random sample, training and testing.
 
 ```{r}
 set.seed(3435)
-
 smarket_split <- initial_split(Smarket, prop = 0.70,
                                 strata = Direction)
 smarket_train <- training(smarket_split)
 smarket_test <- testing(smarket_split)
+
+set.seed(3435)
+oj_split <- initial_split(OJ, prop = 0.70,
+                                strata = Purchase)
+oj_train <- training(oj_split)
+oj_test <- testing(oj_split)
 ```
 
 ## Logistic Regression
 
 ### Creating a Recipe
 
-First, just as with our linear regression lab last week, we want to create a recipe to represent the model we'll be fitting.
+First, just as with our linear regression lab last week, we want to create a recipe to represent the model we'll be fitting -- one for `Direction` and one for `Purchase`. Neither model has categorical predictors, so we won't need to include `step_dummy`.
 
 ```{r}
 smarket_recipe <- recipe(Direction ~ Lag1 + Lag2 + Lag3 + Lag4 + 
                            Lag5 + Volume, data = smarket_train)
+
+oj_recipe <- recipe(Purchase ~ PriceCH + PriceMM + DiscCH + DiscMM +
+         LoyalCH + PctDiscMM + PctDiscCH, data = oj_train)
 ```
 
 ### Specifying an Engine
@@ -148,69 +179,96 @@ log_reg <- logistic_reg() %>%
 
 ### Workflow
 
-We set up the workflow and fit the model to the training data:
+We set up a workflow, one for each recipe, and fit the models to the training data:
 
 ```{r}
-log_wkflow <- workflow() %>% 
+smarketlog_wkflow <- workflow() %>% 
   add_model(log_reg) %>% 
   add_recipe(smarket_recipe)
 
-log_fit <- fit(log_wkflow, smarket_train)
+smarketlog_fit <- fit(smarketlog_wkflow, smarket_train)
+
+ojlog_wkflow <- workflow() %>% 
+  add_model(log_reg) %>% 
+  add_recipe(oj_recipe)
+
+ojlog_fit <- fit(ojlog_wkflow, oj_train)
 ```
 
 ### Model Results
 
-We can view the results:
+We can view the results -- for the `Smarket` data:
 
 ```{r}
-log_fit %>% 
+smarketlog_fit %>% 
   tidy()
 ```
 
-#### Activities
+And for the `OJ` data:
 
-- Are any of the predictors statistically significant?
+```{r}
+ojlog_fit %>% 
+  tidy()
+```
 
 ### Assessing Model Performance
 
-We can use the model to generate probability predictions for the training data:
+We can use each of these models to generate probability predictions for the training data:
 
 ```{r}
-predict(log_fit, new_data = smarket_train, type = "prob")
+predict(smarketlog_fit, new_data = smarket_train, type = "prob")
 ```
 
 Each row represents the probability predicted by the model that a given observation belongs to a given class. Notice this is redundant, because one could be calculated directly from the other, but it's useful in multiclass situations.
 
-However, it's more useful to summarize the predicted values. We can use `augment()` to attach the predicted values to the daata, then generate a confusion matrix:
+We haven't stored these, just looked at them to illustrate what's going on "behind the scenes." For the first row, or the first observation in the `Smarket` **training** set, the logistic regression model generated a predicted probability of `Down` of about 0.56 and a probability of `Up` of about 0.44. The other rows could be interpreted in much the same way. One thing to note is that none of these first 10 probabilities is below 0.40 or above 0.59; this is a clue that the model is not able to discriminate between the two outcome classes very well. Compare that to the probabilities for the `OJ` data:
 
 ```{r}
-augment(log_fit, new_data = smarket_train) %>%
+predict(ojlog_fit, new_data = oj_train, type = "prob")
+```
+
+However, it's more useful to summarize the predicted values. We can use `augment()` to attach the predicted values to the data, then generate a confusion matrix for `Smarket`:
+
+```{r}
+augment(smarketlog_fit, new_data = smarket_train) %>%
   conf_mat(truth = Direction, estimate = .pred_class)
 ```
 
 Or we can create a visual representation of the confusion matrix:
 
 ```{r}
-augment(log_fit, new_data = smarket_train) %>%
+augment(smarketlog_fit, new_data = smarket_train) %>%
   conf_mat(truth = Direction, estimate = .pred_class) %>%
+  autoplot(type = "heatmap")
+```
+
+We'll create a confusion matrix for the orange juice data as well:
+
+```{r}
+augment(ojlog_fit, new_data = oj_train) %>%
+  conf_mat(truth = Purchase, estimate = .pred_class) %>%
   autoplot(type = "heatmap")
 ```
 
 #### Activities
 
-- What do you notice from the confusion matrix?
-- Does the model tend to overpredict one class or the other? If so, which one?
-- Do you think the model is doing well? Why or why not?
+-   What do you notice from each of these confusion matrices?
+-   Consider the data sets. For each outcome, do the models tend to overpredict one class or the other? If so, which one?
+-   Do you think the models are doing well? Why or why not?
 
-Let's calculate the accuracy of this model, or the average number of correct predictions it made on the **training** data. This is the model's **training error rate**.
+Let's calculate the accuracy of the logistic regression model, or the average number of correct predictions it made on the **training** data, for both `OJ` and `Smarket`. This is equivalent to **1 -** **training error rate** for eachmodel.
 
 ```{r}
-log_reg_acc <- augment(log_fit, new_data = smarket_train) %>%
+log_reg_acc_smarket <- augment(smarketlog_fit, new_data = smarket_train) %>%
   accuracy(truth = Direction, estimate = .pred_class)
-log_reg_acc
+log_reg_acc_smarket
+
+log_reg_acc_oj <- augment(ojlog_fit, new_data = oj_train) %>%
+  accuracy(truth = Purchase, estimate = .pred_class)
+log_reg_acc_oj
 ```
 
-We will now go on to fit three more models to the **training** data: A linear discriminant analysis (LDA) model, a quadratic discriminant analysis (QDA) model, and a naive Bayes model.
+We will now go on to fit three more models to the **training** data sets: A linear discriminant analysis (LDA) model, a quadratic discriminant analysis (QDA) model, and a naive Bayes model.
 
 ## LDA
 
@@ -221,37 +279,44 @@ lda_mod <- discrim_linear() %>%
   set_mode("classification") %>% 
   set_engine("MASS")
 
-lda_wkflow <- workflow() %>% 
+smarketlda_wkflow <- workflow() %>% 
   add_model(lda_mod) %>% 
   add_recipe(smarket_recipe)
 
-lda_fit <- fit(lda_wkflow, smarket_train)
+smarketlda_fit <- fit(smarketlda_wkflow, smarket_train)
+
+ojlda_wkflow <- workflow() %>% 
+  add_model(lda_mod) %>% 
+  add_recipe(oj_recipe)
+
+ojlda_fit <- fit(ojlda_wkflow, oj_train)
 ```
 
 ### Assessing Performance
 
-This can be done almost exactly the same way:
+This can be done almost exactly the same way. We can view a confidence matrix and calculate accuracy on the **training data**:
 
 ```{r}
-predict(lda_fit, new_data = smarket_train, type = "prob")
-```
-
-We can view a confidence matrix and calculate accuracy on the **training data**:
-
-```{r}
-augment(lda_fit, new_data = smarket_train) %>%
+augment(smarketlda_fit, new_data = smarket_train) %>%
   conf_mat(truth = Direction, estimate = .pred_class) 
+
+augment(ojlda_fit, new_data = oj_train) %>%
+  conf_mat(truth = Purchase, estimate = .pred_class) 
 ```
 
 ```{r}
-lda_acc <- augment(lda_fit, new_data = smarket_train) %>%
+smarketlda_acc <- augment(smarketlda_fit, new_data = smarket_train) %>%
   accuracy(truth = Direction, estimate = .pred_class)
-lda_acc
+smarketlda_acc
+
+ojlda_acc <- augment(ojlda_fit, new_data = oj_train) %>%
+  accuracy(truth = Purchase, estimate = .pred_class)
+ojlda_acc
 ```
 
 #### Activities
 
-- Compare the results of the LDA model to the results of the logistic regression model.
+-   Compare the results of the LDA models to the results of the logistic regression models.
 
 ## QDA
 
@@ -262,32 +327,37 @@ qda_mod <- discrim_quad() %>%
   set_mode("classification") %>% 
   set_engine("MASS")
 
-qda_wkflow <- workflow() %>% 
+smarketqda_wkflow <- workflow() %>% 
   add_model(qda_mod) %>% 
   add_recipe(smarket_recipe)
 
-qda_fit <- fit(qda_wkflow, smarket_train)
+smarketqda_fit <- fit(smarketqda_wkflow, smarket_train)
+
+ojqda_wkflow <- workflow() %>% 
+  add_model(qda_mod) %>% 
+  add_recipe(oj_recipe)
+
+ojqda_fit <- fit(ojqda_wkflow, oj_train)
 ```
 
 ### Assessing Performance
 
-And again:
+And again we can view confidence matrices and calculate accuracies on the **training data**:
 
 ```{r}
-predict(qda_fit, new_data = smarket_train, type = "prob")
-```
-
-We can view a confidence matrix and calculate accuracy on the **training data**:
-
-```{r}
-augment(qda_fit, new_data = smarket_train) %>%
+augment(smarketqda_fit, new_data = smarket_train) %>%
   conf_mat(truth = Direction, estimate = .pred_class) 
-```
 
-```{r}
-qda_acc <- augment(qda_fit, new_data = smarket_train) %>%
+smarketqda_acc <- augment(smarketqda_fit, new_data = smarket_train) %>%
   accuracy(truth = Direction, estimate = .pred_class)
-qda_acc
+smarketqda_acc
+
+augment(ojqda_fit, new_data = oj_train) %>%
+  conf_mat(truth = Purchase, estimate = .pred_class) 
+
+ojqda_acc <- augment(ojqda_fit, new_data = oj_train) %>%
+  accuracy(truth = Purchase, estimate = .pred_class)
+ojqda_acc
 ```
 
 ## Naive Bayes
@@ -300,62 +370,82 @@ nb_mod <- naive_Bayes() %>%
   set_engine("klaR") %>% 
   set_args(usekernel = FALSE) 
 
-nb_wkflow <- workflow() %>% 
+smarketnb_wkflow <- workflow() %>% 
   add_model(nb_mod) %>% 
   add_recipe(smarket_recipe)
 
-nb_fit <- fit(nb_wkflow, smarket_train)
+smarketnb_fit <- fit(smarketnb_wkflow, smarket_train)
+
+ojnb_wkflow <- workflow() %>% 
+  add_model(nb_mod) %>% 
+  add_recipe(oj_recipe)
+
+ojnb_fit <- fit(ojnb_wkflow, oj_train)
 ```
 
 ### Assessing Performance
 
-And again:
+We can view confidence matrices and calculate accuracies on the **training data**:
 
 ```{r}
-predict(nb_fit, new_data = smarket_train, type = "prob")
-```
+augment(smarketnb_fit, new_data = smarket_train) %>%
+  conf_mat(truth = Direction, estimate = .pred_class)
 
-We can view a confidence matrix and calculate accuracy on the **training data**:
-
-```{r}
-augment(nb_fit, new_data = smarket_train) %>%
-  conf_mat(truth = Direction, estimate = .pred_class) 
-```
-
-```{r}
-nb_acc <- augment(nb_fit, new_data = smarket_train) %>%
+smarketnb_acc <- augment(smarketnb_fit, new_data = smarket_train) %>%
   accuracy(truth = Direction, estimate = .pred_class)
-nb_acc
+smarketnb_acc
+
+augment(ojnb_fit, new_data = oj_train) %>%
+  conf_mat(truth = Purchase, estimate = .pred_class)
+
+ojnb_acc <- augment(ojnb_fit, new_data = oj_train) %>%
+  accuracy(truth = Purchase, estimate = .pred_class)
+ojnb_acc
 ```
 
 ## Comparing Model Performance
 
-Now we can make a table of the accuracy rates from these four models to choose the model that produced the highest accuracy on the training data:
+Now we can make a table of the accuracy rates from these four models to choose the model that produced the highest accuracy on the **training data** for each of the two data sets.
+
+For the `Smarket` data:
 
 ```{r}
-accuracies <- c(log_reg_acc$.estimate, lda_acc$.estimate, 
-                nb_acc$.estimate, qda_acc$.estimate)
+accuracies <- c(log_reg_acc_smarket$.estimate, 
+                smarketlda_acc$.estimate, 
+                smarketnb_acc$.estimate, 
+                smarketqda_acc$.estimate)
 models <- c("Logistic Regression", "LDA", "Naive Bayes", "QDA")
 results <- tibble(accuracies = accuracies, models = models)
-results %>% 
+results %>%
+  arrange(-accuracies)
+```
+
+For the `OJ` data set:
+
+```{r}
+accuracies <- c(log_reg_acc_oj$.estimate, ojlda_acc$.estimate, 
+                ojnb_acc$.estimate, ojqda_acc$.estimate)
+models <- c("Logistic Regression", "LDA", "Naive Bayes", "QDA")
+results <- tibble(accuracies = accuracies, models = models)
+results %>%
   arrange(-accuracies)
 ```
 
 #### Activities
 
-- Which model performed the best on the training data?
-- Which model would you choose? Why?
+-   Which model performed the best on the training data for each data set?
+-   Which model would you choose? Why?
 
 ## Fitting to Testing Data
 
-Since the naive Bayes model performed slightly better, we'll go ahead and fit it to the testing data. Note that what we are doing -- that is, selecting a model based on its *training accuracy* -- is not ideal practice, as we've discussed in class. The model with the highest training accuracy is not guaranteed to have high testing accuracy.
+Since the QDA model performed slightly better for `Smarket`, we'll go ahead and fit it to the testing data. Note that what we are doing -- that is, selecting a model based on its *training accuracy* -- is **not** ideal practice, as we've discussed in class. The model with the highest training accuracy is **not** guaranteed to have high testing accuracy.
 
-In future weeks, we'll cover how to use cross-validation to get an estimate of our models' performance on *testing data* and use that estimate for selecting a model instead. We choose based on training accuracy here because we haven't discussed cross-validation yet. Choosing a model based on training performance is *not a good idea in general*.
+In future weeks, we'll cover how to use cross-validation to get an estimate of our models' performance on *testing data* and use that estimate for selecting a model instead. We choose based on training accuracy here **only because** we haven't discussed cross-validation yet. Choosing a model based on training performance is ***not a good idea in general*****.**
 
-Since we've chosen a model -- naive Bayes -- we can view its confusion matrix using the **testing** data:
+Since we've chosen a model, however -- QDA -- we can view its confusion matrix using the **testing** data:
 
 ```{r}
-augment(nb_fit, new_data = smarket_test) %>%
+augment(smarketqda_fit, new_data = smarket_test) %>%
   conf_mat(truth = Direction, estimate = .pred_class) 
 ```
 
@@ -364,23 +454,37 @@ We can also look at its **testing** accuracy. Here, we add two other metrics, se
 ```{r}
 multi_metric <- metric_set(accuracy, sensitivity, specificity)
 
-augment(nb_fit, new_data = smarket_test) %>%
+augment(smarketqda_fit, new_data = smarket_test) %>%
   multi_metric(truth = Direction, estimate = .pred_class)
 ```
 
 Finally, let's look at an ROC curve on the testing data:
 
 ```{r}
-augment(lda_fit, new_data = smarket_test) %>%
+augment(smarketqda_fit, new_data = smarket_test) %>%
   roc_curve(Direction, .pred_Down) %>%
+  autoplot()
+```
+
+We'll fit the logistic regression to the `OJ` testing set, since it also performed best on the training set, with the same caveats, and view the same things:
+
+```{r}
+augment(ojlog_fit, new_data = oj_test) %>%
+  conf_mat(truth = Purchase, estimate = .pred_class) 
+multi_metric <- metric_set(accuracy, sensitivity, specificity)
+augment(ojlog_fit, new_data = oj_test) %>%
+  multi_metric(truth = Purchase, estimate = .pred_class)
+augment(ojlog_fit, new_data = oj_test) %>%
+  roc_curve(Purchase, .pred_CH) %>%
   autoplot()
 ```
 
 #### Activities
 
-- What do the sensitivity and specificity values mean? Interpret them in terms of the concepts and data.
-- How well did the model perform on the **testing** data?
-- Why do you think the model performed like it did?
+-   What do the sensitivity and specificity values mean? Interpret them in terms of the concepts and data.
+-   How well did the models perform on the **testing** data?
+-   Why do you think the models performed like they did?
+-   Which model performed better?
 
 ## Resources
 
