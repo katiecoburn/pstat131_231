@@ -108,27 +108,43 @@ lm_model <- linear_reg() %>%
 
 ### Question 5
 
-Now:
-
-1.  set up an empty workflow,
-2.  add the model you created in Question 4, and
-3.  add the recipe that you created in Question 3.
+Create and store a KNN object using the `"kknn"` engine. Specify `k = 7`.
 
 ```{r}
-abalone_workflow <- workflow() %>% 
-  add_recipe(abalone_recipe) %>% 
-  add_model(lm_model)
-
-abalone_fit <- fit(abalone_workflow, abalone_train)
-
-abalone_fit %>% 
-  extract_fit_parsnip() %>% 
-  tidy()
+knn_model <- nearest_neighbor(neighbors = 7) %>% 
+  set_engine("kknn") %>% 
+  set_mode("regression")
 ```
 
 ### Question 6
 
-Use your `fit()` object to predict the age of a hypothetical female abalone with longest_shell = 0.50, diameter = 0.10, height = 0.30, whole_weight = 4, shucked_weight = 1, viscera_weight = 2, shell_weight = 1.
+Now, for each of these models (linear regression and KNN):
+
+1.  set up an empty workflow,
+2.  add the model, and
+3.  add the recipe that you created in Question 3.
+
+Note that you should be setting up two separate workflows.
+
+Fit both models to the training set.
+
+```{r}
+abalone_workflow_lm <- workflow() %>% 
+  add_recipe(abalone_recipe) %>% 
+  add_model(lm_model)
+
+abalone_fit_lm <- fit(abalone_workflow_lm, abalone_train)
+
+abalone_workflow_knn <- workflow() %>% 
+  add_recipe(abalone_recipe) %>% 
+  add_model(knn_model)
+
+abalone_fit_knn <- fit(abalone_workflow_knn, abalone_train)
+```
+
+### Question 6
+
+Use your linear regression `fit()` object to predict the age of a hypothetical female abalone with longest_shell = 0.50, diameter = 0.10, height = 0.30, whole_weight = 4, shucked_weight = 1, viscera_weight = 2, and shell_weight = 1.
 
 ```{r}
 hypo_abalone <- tibble(type = "F", longest_shell = 0.50,
@@ -138,7 +154,7 @@ hypo_abalone <- tibble(type = "F", longest_shell = 0.50,
 # It doesn't matter what rings is set to, because the recipe drops it
 # if you dropped rings from the data entirely, you don't need to set it to
 # a value here
-predict(abalone_fit, new_data = hypo_abalone)
+predict(abalone_fit_lm, new_data = hypo_abalone)
 ```
 
 *The age of this hypothetical abalone is predicted to be about 22.2 years.*
@@ -148,19 +164,29 @@ predict(abalone_fit, new_data = hypo_abalone)
 Now you want to assess your model's performance. To do this, use the `yardstick` package:
 
 1.  Create a metric set that includes *R^2^*, RMSE (root mean squared error), and MAE (mean absolute error).
-2.  Use `predict()` and `bind_cols()` to create a tibble of your model's predicted values from the **training data** along with the actual observed ages (these are needed to assess your model's performance).
+2.  Use `predict()` and `bind_cols()` to create a tibble of your model's predicted values from the **testing data** along with the actual observed ages (these are needed to assess your model's performance).
 3.  Finally, apply your metric set to the tibble, report the results, and interpret the *R^2^* value.
+
+Repeat these steps once for the linear regression model and for the KNN model.
 
 ```{r}
 multi_metric <- metric_set(rmse, rsq, mae)
-abalone_predict <- predict(abalone_fit, abalone_test) %>% 
+abalone_predict <- predict(abalone_fit_lm, abalone_test) %>% 
   bind_cols(abalone_test %>% select(age))
 multi_metric(abalone_predict, truth = age, estimate = .pred)
 ```
 
 *The* $R^2$ value here is pretty low; it means that only about $55\%$ of variation in abalone age was explained by the model. This is likely because the relationship between age and the predictors is not necessarily linear. If you're interested, suggest running some linear regression diagnostics to assess.
 
-NOTE TO SELF: ADD A KNN REGRESSION EXAMPLE PROBLEM HERE
+```{r}
+abalone_predict_knn <- predict(abalone_fit_knn, abalone_test) %>% 
+  bind_cols(abalone_test %>% select(age))
+multi_metric(abalone_predict_knn, truth = age, estimate = .pred)
+```
+
+However, the $R^2$ value for the KNN model on the testing set is even lower. We didn't calculate the training $R^2$ values as part of this assignment, but if we had, it's probably safe to guess that there would be overfitting.
+
+Neither of these models did particularly well in terms of predicting new data. It's worth noting, though, that we've tried only one value for `k`, and we selected `k = 7` completely arbitrarily. If we were to use cross-validation to tune the model (as we will next week!), we could select an optimal value for `k` that might result in improved performance.
 
 ### Required for 231 Students
 
