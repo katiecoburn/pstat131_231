@@ -1,6 +1,0 @@
-"0","library(tidymodels)"
-"0","library(ISLR) # For the Smarket data set"
-"0","library(discrim)"
-"0","library(poissonreg)"
-"0","library(corrr)"
-"0","library(klaR) # for naive bayes"

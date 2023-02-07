@@ -13,7 +13,7 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE,
                       warning = FALSE)
 ```
 
-## Classification
+## Binary Classification
 
 For this assignment, we will be working with part of a [Kaggle data set](https://www.kaggle.com/c/titanic/overview) that was the subject of a machine learning competition and is often used for practicing ML models. The goal is classification; specifically, to predict which passengers would survive the [Titanic shipwreck](https://en.wikipedia.org/wiki/Titanic).
 
@@ -29,7 +29,7 @@ Make sure you load the `tidyverse` and `tidymodels`!
 
 ### Question 1
 
-Split the data, stratifying on the outcome variable, `survived.`  You should choose the proportions to split the data into. Verify that the training and testing data sets have the appropriate number of observations. Take a look at the training data and note any potential issues, such as missing data.
+Split the data, stratifying on the outcome variable, `survived.` You should choose the proportions to split the data into. Verify that the training and testing data sets have the appropriate number of observations. Take a look at the training data and note any potential issues, such as missing data.
 
 Why is it a good idea to use stratified sampling for this data?
 
@@ -37,9 +37,15 @@ Why is it a good idea to use stratified sampling for this data?
 
 Using the **training** data set, explore/describe the distribution of the outcome variable `survived`.
 
+Create a [percent stacked bar chart](https://r-graph-gallery.com/48-grouped-barplot-with-ggplot2) (recommend using `ggplot`) with `survived` on the *x*-axis and `fill = sex`. Do you think `sex` will be a good predictor of the outcome?
+
+Create one more percent stacked bar chart of `survived`, this time with `fill = pclass`. Do you think passenger class will be a good predictor of the outcome?
+
+Why do you think it might be more useful to use a [percent stacked bar chart](https://r-graph-gallery.com/48-grouped-barplot-with-ggplot2) as opposed to a traditional stacked bar chart?
+
 ### Question 3
 
-Using the **training** data set, create a correlation matrix of all continuous variables. Create a visualization of the matrix, and describe any patterns you see. Are any predictors correlated with each other? Which ones, and in which direction?
+Using the **training** data set, create a correlation matrix of all continuous variables. Visualize the matrix and describe any patterns you see. Are any predictors correlated with each other? Which ones, and in which direction?
 
 ### Question 4
 
@@ -68,23 +74,21 @@ Specify a **logistic regression** model for classification using the `"glm"` eng
 
 ### Question 8
 
-**Repeat Question 5**, but this time specify a naive Bayes model for classification using the `"klaR"` engine. Set the `usekernel` argument to `FALSE`.
+**Repeat Question 5**, but this time specify a *k*-nearest neighbors model for classification using the `"kknn"` engine. Choose a value for *k* to try.
 
 ### Question 9
 
 Now you've fit four different models to your training data.
 
-Use `predict()` and `bind_cols()` to generate predictions using each of these 4 models and your **training** data. Then use the *accuracy* metric to assess the performance of each of the four models.
-
-Which model achieved the highest accuracy on the training data?
+Use `predict()` and `bind_cols()` to generate predictions using each of these 4 models and your **training** data. Then use the metric of **area under the ROC curve** to assess the performance of each of the four models.
 
 ### Question 10
 
-Fit the model with the highest training accuracy to the **testing** data. Report the accuracy of the model on the **testing** data.
+Fit all four models to your **testing** data and report the AUC of each model on the **testing** data. Which model achieved the highest AUC on the **testing** data?
 
-Again using the **testing** data, create a confusion matrix and visualize it. Plot an ROC curve and calculate the area under it (AUC).
+Using your top-performing model, create a confusion matrix and visualize it. Create a plot of its ROC curve.
 
-How did the model perform? Compare its training and testing accuracies. If the values differ, why do you think this is so?
+How did your best model perform? Compare its **training** and **testing** AUC values. If the values differ, why do you think this is so?
 
 ### Required for 231 Students
 
@@ -108,4 +112,4 @@ $$
 
 Assume that $z = \beta_0 + \beta_{1}x_{1}$ and $p = logistic(z)$. How do the odds of the outcome change if you increase $x_{1}$ by two? Demonstrate this.
 
-Assume now that $\beta_1$ is negative. What value does $p$ approach as $x_{1}$ approaches $\infty$? What value does $p$ approach as $x_{1}$ approaches $-\infty$?
+Assume now that $\beta_1$ is negative. What value does $p$ approach as $x_{1}$ approaches $\infty$? What value does $p$ approach as $x_{1}$ approaches $-\infty$? Demonstrate.
