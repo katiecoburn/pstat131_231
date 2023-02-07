@@ -1818,12 +1818,13 @@ validation set for this simpler KNN model?</li>
 </div>
 <div id="k-fold-cross-validation" class="section level2">
 <h2><em>k</em>-fold Cross-Validation</h2>
-<p>Earlier, we set <code>neighbors = 5</code> to create a second-degree
-polynomial regression model. But suppose we want to find the best value
-of <code>neighbors</code> that yields the best performance when applied
-to new data. The process of identifying the best value to set a
-hyperparameter to is known as hyperparameter <strong>tuning</strong>,
-and it is a case where we can use k-fold cross-validation.</p>
+<p>Earlier, we set <code>neighbors = 5</code> to fit a
+<em>k</em>-nearest neighbors model with specifically 5 neighbors. But
+suppose we want to find the best value of <code>neighbors</code> that
+yields the best performance when applied to new data. The process of
+identifying the best value to set a hyperparameter to is known as
+hyperparameter <strong>tuning</strong>, and it is a case where we can
+use k-fold cross-validation.</p>
 <p>To use k-fold cross-validation, we need 3 things:</p>
 <ul>
 <li><p>A <code>workflow</code> object with one or more arguments marked

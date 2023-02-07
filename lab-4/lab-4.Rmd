@@ -179,7 +179,7 @@ augment(final_val_fit, new_data = Auto_test) %>%
 
 ## *k*-fold Cross-Validation
 
-Earlier, we set `neighbors = 5` to create a second-degree polynomial regression model. But suppose we want to find the best value of `neighbors` that yields the best performance when applied to new data. The process of identifying the best value to set a hyperparameter to is known as hyperparameter **tuning**, and it is a case where we can use k-fold cross-validation.
+Earlier, we set `neighbors = 5` to fit a *k*-nearest neighbors model with specifically 5 neighbors. But suppose we want to find the best value of `neighbors` that yields the best performance when applied to new data. The process of identifying the best value to set a hyperparameter to is known as hyperparameter **tuning**, and it is a case where we can use k-fold cross-validation.
 
 To use k-fold cross-validation, we need 3 things:
 
