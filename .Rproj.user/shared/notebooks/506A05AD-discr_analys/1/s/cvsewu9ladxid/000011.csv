@@ -1,4 +1,0 @@
-"0","titanic_recipe <- recipe(survived ~ sex + age + fare + "
-"0","                           sib_sp + parch, titanic_train) %>% "
-"0","  step_impute_linear(age, impute_with = imp_vars(sib_sp, parch)) %>% "
-"0","  step_dummy(all_nominal_predictors())"

@@ -14,7 +14,7 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE,
 
 ## Data
 
-Although discriminant analyses like LDA and QDA can work with any categorical outcomes, the number of decision boundaries that can be produced is equal to $k - 1$ where $k$ is the number of classes; in other words, binary classification results in $1$ decision boundary, etc. So here we'll use a classification dataset where the outcome has three levels; that will make some aspects of the models easier to illustrate.
+Although discriminant analyses like LDA and QDA can work with any categorical outcomes, the number of decision boundaries that can be produced is equal to $k - 1$, where $k$ is the number of classes, or $p$, whichever is smaller. In other words, binary classification results in $1$ decision boundary, etc. So here we'll use a classification dataset where the outcome has two levels; that will make some aspects of the models easier to illustrate, because there will only be one discriminant function or decision boundary created.
 
 We'll use one of the classic machine learning example datasets, `iris` (which is loaded with base R automatically). You can type `?iris` for more details about it. It contains 150 measurements of sepal and petal length and width for 3 different species of iris, 50 flowers per species. The goal is to **correctly classify the species of iris** based on the four predictors.
 
@@ -28,6 +28,7 @@ library(discrim)
 library(poissonreg)
 library(corrr)
 library(ggthemes)
+library(naniar)
 library(janitor)
 tidymodels_prefer()
 
@@ -41,6 +42,20 @@ iris_split <- iris %>%
   initial_split(strata = species, prop = 0.7)
 iris_train <- training(iris_split)
 iris_test <- testing(iris_split)
+
+titanic <- read_csv(file = "homework-3/data/titanic.csv") %>% 
+  mutate(survived = factor(survived, 
+                           levels = c("Yes", "No")),
+         pclass = factor(pclass))
+
+vis_miss(titanic)
+titanic <- titanic %>% 
+  drop_na()
+
+titanic_split <- titanic %>% 
+  initial_split(strata = survived, prop = 0.7)
+titanic_train <- training(titanic_split)
+titanic_test <- testing(titanic_split)
 ```
 
 We split the data into training and testing sets, and choose to include $70\%$ of the data in training and $30\%$ in testing. We use stratified sampling to make sure that there is an equal number of flowers with each species in the training and testing sets.
@@ -54,6 +69,9 @@ Now we'll create two recipes to predict iris species -- one that we'll call Reci
 ```{r, class.source = 'fold-show'}
 iris_recipea <- recipe(species ~ sepal_length + sepal_width +
                          petal_length + petal_width, iris_train)
+
+
+titanic_recipe <- recipe(survived ~ age, data = titanic_train)
 ```
 
 [Recipe B:]{.underline}
@@ -75,9 +93,9 @@ lda_mod <- discrim_linear() %>%
 
 lda_wkflow <- workflow() %>% 
   add_model(lda_mod) %>% 
-  add_recipe(iris_recipeb)
+  add_recipe(titanic_recipe)
 
-lda_fitb <- fit(lda_wkflow, iris_train)
+lda_fitb <- fit(lda_wkflow, titanic_train)
 lda_fitb
 ```
 
@@ -85,7 +103,7 @@ Looking at these results actually tells us a number of things. We'll break them 
 
 ### Prior probabilities
 
-First, we are given the prior probabilities of the two groups, or classes. In the `iris` data, $k = 3$; there are three classes of the outcome variable. The model tells us that the prior probability of each of the three classes is $0.3333333$. In other words, $\pi_{1} = \pi_{2} = \pi_{3} = 0.33$.
+First, we are given the prior probabilities of the two groups, or classes. In the `iris` data, $k = 2$; there are two classes of the outcome variable. The model tells us that the prior probability of each of the three classes is $0.3333333$. In other words, $\pi_{1} = \pi_{2} = \pi_{3} = 0.33$.
 
 How are those estimated? Well, we know that: $$
 \hat{\pi_k} = \frac{n_k}{n}
@@ -109,19 +127,19 @@ Here, the prior probability for all three classes is the same, because the data 
 
 ### Group means
 
-For our simplified recipe, there is only one  predictor -- sepal length in centimeters. Therefore, $p = 1$. In discriminant analysis -- whether it be linear or quadratic -- we are assuming, or allowing, the means of the predictor variables to differ across levels of the outcome variable. In other words:
+For our simplified recipe, there is only one predictor -- age. Therefore, $p = 1$. In discriminant analysis -- whether it be linear or quadratic -- we are assuming, or allowing, the means of the predictor variables to differ across levels of the outcome variable. In other words:
 $$
 X_1|Y=k \sim N(\mu_{k}, \sigma^2)
 $$
 
-Therefore, there are three means for the predictor `sepal_length`; the mean of that predictor for level $1$ of the outcome (setosa irises), the mean of that predictor for level $2$ of the outcome (versicolor irises), and the mean for level $3$, virginica irises. There are also three means for the predictor `sepal_width`. We can see that in the results above. We can also extract and print just the group means (see code below) to look at them more easily:
+Therefore, there are two means for the predictor `sepal_length`; the mean of that predictor for level $1$ of the outcome (setosa irises), the mean of that predictor for level $2$ of the outcome (versicolor irises), and the mean for level $3$, virginica irises. There are also three means for the predictor `sepal_width`. We can see that in the results above. We can also extract and print just the group means (see code below) to look at them more easily:
 
 ```{r}
 results <- lda_fitb %>% extract_fit_parsnip()
 results$fit$means
 ```
 
-So this means that we are assuming $X_{sl} | Y = 1 \sim N(\mu_1 = 4.985714)$. In other words, the conditional distribution of sepal length given that the irises are species setosa has a mean of about $4.99$ centimeters. We can see here that there appears to be a difference in sepal length across species; $\mu_1 \neq \mu_2 \neq \mu_3$. The virginica irises seem to have the longest sepals on average.
+So this means that we are assuming $X_{age} | Y = Survived \sim N(\mu_1 = 33.27)$. In other words, the conditional distribution of age given that the irises are species setosa is estimated to have a mean of about $33.27$ years. We can see here that there appears to be a difference in sepal length across species; $\mu_1 \neq \mu_2$. The virginica irises seem to have the longest sepals on average.
 
 Where do the group mean values come from? Just like we see in the slides:
 $$
@@ -131,40 +149,40 @@ $$
 In other words, the average value of $X_{wage}$ for training observations in the given class. So:
 
 ```{r}
-iris_train %>% 
-  group_by(species) %>% 
-  summarise(x_1 = mean(sepal_length))
+titanic_train %>% 
+  group_by(survived) %>% 
+  summarise(x_1 = mean(age))
 ```
 
 Notice that the group means exactly match the output.
 
-So far, we have values of $\hat\pi_1$, $\hat\pi_2$, $\hat\pi_3$, and all six conditional group means, and all we've done is calculate classical probabilities and means!
+So far, we have values of $\hat\pi_1$, $\hat\pi_2$, and both conditional group means, and all we've basically done is calculate averages!
 
 ### Variance
 
-With LDA, we make the assumption that the variances are equal; in other words, that conditional variance of $X$ is the same across classes of the outcome -- $X|Y=k \sim N(\mu_{k}, \sigma^2)$. The estimate, $\hat{\sigma^2}$, is calculated as shown in the slides: $\hat{\sigma^2} = \frac{1}{n-K}\sum\limits_{k=1}^{K}\sum\limits_{i:y_i=k}(x_i - \hat{\mu_k})^2$
+With LDA, we make the assumption that the variances are equal; in other words, that the conditional variance of $X$ is the same across classes of the outcome -- $X|Y=k \sim N(\mu_{k}, \sigma^2)$. The estimate, $\hat{\sigma^2}$, is calculated as shown in the slides: $\hat{\sigma^2} = \frac{1}{n-K}\sum\limits_{k=1}^{K}\sum\limits_{i:y_i=k}(x_i - \hat{\mu_k})^2$
 
 We can generate the sum of squared deviations between $x_i$ and $\hat{\mu_k}$ as shown:
 
 ```{r}
-iris_train %>% 
-  group_by(species) %>% 
-  summarise(devs = sum((sepal_length - mean(sepal_length))^2))
+titanic_train %>% 
+  group_by(survived) %>% 
+  summarise(devs = sum((age - mean(age))^2))
 ```
 
 Now we need to sum these -- this is doing the outside summation, from $k = 1$ to $K$ (where $K = 2$):
 
 ```{r}
-3.702857 + 9.638857 + 13.804000	
+18931.83 + 12233.29	
 ```
 
 And divide it by $n - K$:
 
 ```{r}
-27.14571/(105 - 3)
+31165.12/(128 - 2)
 ```
 
-That is our estimate of the variance of `sepal_length` combined across levels of the outcome: $\hat{\sigma^2} = 0.2661344$.
+That is our estimate of the variance of `sepal_length` combined across levels of the outcome: $\hat{\sigma^2} = 247.3422$.
 
 ### Discriminants
 

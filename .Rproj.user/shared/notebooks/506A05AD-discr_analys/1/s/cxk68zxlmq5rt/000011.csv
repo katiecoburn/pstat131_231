@@ -1,3 +1,0 @@
-"0","predictions <- predict(lda_fitb, "
-"0","                       new_data = titanic_train, "
-"0","                       type = ""raw"")"
