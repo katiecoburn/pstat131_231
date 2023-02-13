@@ -1,3 +1,0 @@
-"0","ridge_spec <- linear_reg(mixture = 0, penalty = 0) %>%"
-"0","  set_mode(""regression"") %>%"
-"0","  set_engine(""glmnet"")"

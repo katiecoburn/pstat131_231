@@ -32,7 +32,7 @@ library(naniar)
 library(janitor)
 tidymodels_prefer()
 
-set.seed(3000) # can be any number
+set.seed(3435) # can be any number
 
 iris <- iris %>% 
   clean_names() %>% 
@@ -101,6 +101,12 @@ lda_fitb
 
 Looking at these results actually tells us a number of things. We'll break them down step by step.
 
+```{r}
+titanic_train %>% 
+  ggplot(aes(x = age, y = 1, color = survived)) + geom_jitter(height = 0.02, width = 0) +
+  scale_y_continuous(limits = c(0.75,1.25))
+```
+
 ### Prior probabilities
 
 First, we are given the prior probabilities of the two groups, or classes. In the `iris` data, $k = 2$; there are two classes of the outcome variable. The model tells us that the prior probability of each of the three classes is $0.3333333$. In other words, $\pi_{1} = \pi_{2} = \pi_{3} = 0.33$.
@@ -151,7 +157,8 @@ In other words, the average value of $X_{wage}$ for training observations in the
 ```{r}
 titanic_train %>% 
   group_by(survived) %>% 
-  summarise(x_1 = mean(age))
+  summarise(x_1 = mean(age), 
+            var = var(age))
 ```
 
 Notice that the group means exactly match the output.
@@ -191,9 +198,9 @@ The last part of the output provides coefficients of linear discriminants for fa
 First, let's generate the predicted values:
 
 ```{r}
-# predictions <- predict(lda_fitb, 
-                      # new_data = titanic_train, 
-                     #  type = "raw")
+predictions <- predict(lda_fitb, 
+                      new_data = titanic_train, 
+                      type = "raw")
 ```
 
 We specify `type = "raw,"` which generates output that can vary depending on the model and the package engine. For LDA with MASS, there are three elements -- `class,` or the predicted class for each observation, `posterior,` a matrix of estimated probabilities for class membership, and `x,` which contains the linear discriminant values for each observation.
@@ -201,21 +208,22 @@ We specify `type = "raw,"` which generates output that can vary depending on the
 We'll attach the linear discriminant values and probabilities of each class to the processed training data and look at it:
 
 ```{r}
-# titanic_train_append <- bind_cols(predictions$x,
-#                                   predictions$posterior,
-#                                   (titanic_recipeb %>% prep() %>% juice()))
-# head(titanic_train_append)
+titanic_train_append <- bind_cols(pred_class = predictions$class, 
+                                  predictions$x,
+                                 predictions$posterior,
+                                 titanic_train)
+head(titanic_train_append)
 ```
 
-The coefficient for fare from the model output is $0.02209788$. This means that the boundary between the two classes can be specified by the following formula:
+The coefficient for fare from the model output is $0.06537818$. This means that the boundary between the two classes can be specified by the following formula:
 
 ```{r}
-# y = 0.02209788 * titanic_train_append$fare
+0.06537818 * titanic_train_append$age
 ```
 
 ```{r}
-#titanic_train_append %>% 
- # ggplot(aes(y = LD1, x = fare, color = survived)) + geom_point()
+titanic_train_append %>% 
+ ggplot(aes(y = LD1, x = age, color = survived)) + geom_point()
 ```
 
 For the first observation shown above:

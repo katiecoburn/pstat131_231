@@ -90,7 +90,8 @@ There are some specific cases -- for instance, time series data, where there is 
 Now that we have a train-test split, to use the validation set approach, we need to create one more random sample from the training set; this will be our **validation set**. We'll **train** our models on the training sample, **choose** a best-fitting model by comparing their. performance on the validation set, and ultimately fit our best-fitting modelto the **testing set** and **evaluate** its performance.
 
 ```{r}
-Auto_valid <- validation_split(Auto_train, prop = .75, strata = mpg)
+Auto_valid <- validation_split(Auto_train, prop = .75, 
+                               strata = mpg)
 ```
 
 Before we move on, it is important to reiterate that you should **only** use the **testing** data set **once**! Once you have assessed your model's performance on the testing data set, you should not modify your models. If you do, you might end up overfitting the model due to *data leakage* -- the phenomenon that occurs when there is an overlap between training data and testing data.

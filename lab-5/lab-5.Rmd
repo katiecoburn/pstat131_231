@@ -1,5 +1,5 @@
 ---
-title: "Lab 6: Beyond Linearity"
+title: "Lab 5: Regularized Regression"
 author: "PSTAT 131/231"
 output:
     html_document:
@@ -15,9 +15,11 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE,
 
 ## Introduction
 
-This lab will take a look at regularization models and hyperparameter tuning. These models are related to the models we saw in chapter 3 and 4, with the difference that they contain a regularization term. This chapter will use ['parsnip'](https://www.tidymodels.org/start/models/) for model fitting and ['recipes and workflows'](https://www.tidymodels.org/start/recipes/) to perform the transformations, and ['tune and dials'](https://www.tidymodels.org/start/tuning/) to tune the hyperparameters of the model.
+This lab will take a look at (1) regularized regression models and (2) their corresponding hyperparameter tuning for both **linear** and **logistic** regression. Regularized regression models are related to the linear and logistic regression models we saw in chapter 3 and 4 of ISLR, but they contain a regularization term.
 
-We will be using the `Hitters` data set from the `ISLR` package. We wish to predict the baseball players' `Salary` based on several different characteristics which are included in the data set. Since we wish to predict `Salary`, then we need to remove any missing data from that column. Otherwise, we won’t be able to run the models.
+This chapter will use ['parsnip'](https://www.tidymodels.org/start/models/) for model fitting and ['recipes and workflows'](https://www.tidymodels.org/start/recipes/) to perform the transformations, and ['tune and dials'](https://www.tidymodels.org/start/tuning/) to tune the hyperparameters of the model.
+
+We will be using the `Hitters` data set from the `ISLR` package. We wish to predict the baseball players' `Salary` based on several different characteristics which are included in the data set. Since we wish to predict `Salary`, then we need to remove any missing data from that column. Otherwise, we won't be able to run the models.
 
 Note that regularization -- ridge and lasso, etc. -- can be used for **both linear and logistic regression**.
 
@@ -45,7 +47,7 @@ Hitters <- as_tibble(Hitters) %>%
 
 #### Activities
 
-- Access the help page for `Hitters`. Familiarize yourself with the subject of each data set and the predictor variables.
+-   Access the help page for `Hitters`. Familiarize yourself with the subject of each data set and the predictor variables.
 
 ## The Initial Split
 
@@ -63,7 +65,7 @@ Hitters_fold <- vfold_cv(Hitters_train, v = 10)
 
 #### Activities
 
-- Note that no proportion was specified in `initial_split()`. Check the help information for this function. What is the default specification? Check the dimensions of the training and test sets to verify.
+-   Note that no proportion was specified in `initial_split()`. Check the help information for this function. What is the default specification? Check the dimensions of the training and test sets to verify.
 
 ## Ridge Regression
 
@@ -109,7 +111,7 @@ tidy(ridge_fit, penalty = 50)
 
 #### Activities
 
-- Compare and contrast the estimates for these two very different penalty values. What do you notice?
+-   Compare and contrast the estimates for these two very different penalty values. What do you notice?
 
 We can visualize how the magnitude of the coefficients are being regularized towards zero as the penalty goes up:
 
@@ -133,22 +135,19 @@ predict(ridge_fit, new_data = Hitters_train, penalty = 500)
 
 #### Activities
 
-- What do you notice about the predicted values for these observations as the value of `penalty` changes?
+-   What do you notice about the predicted values for these observations as the value of `penalty` changes?
 
-
-We saw how we can fit a ridge model and make predictions for different values of `penalty`, but it would be nice if we could find the “best” value of `penalty`. This is something we can use hyperparameter tuning for.
+We saw how we can fit a ridge model and make predictions for different values of `penalty`, but it would be nice if we could find the "best" value of `penalty`. This is something we can use hyperparameter tuning for.
 
 ### Hyperparameter Tuning
 
-Hyperparameter tuning is, in its simplest form, a way of fitting many models with different sets of hyperparameters trying to find one that performs “best.” The complexity in hyperparameter tuning can come from the number of different models tried. We will keep it simple for this lab and only look at grid search, only looking at evenly spaced parameter values. This is a fine enough approach if you have one or two tunable parameters, but can become computationally infeasible. See the chapter on ['iterative search'](https://www.tmwr.org/iterative-search.html) from ['Tidy Modeling with R'](https://www.tmwr.org/) for more information.
+Hyperparameter tuning is, in its simplest form, a way of fitting many models with different sets of hyperparameters trying to find one that performs "best." The complexity in hyperparameter tuning can come from the number of different models tried. We will keep it simple for this lab and only look at grid search, only looking at evenly spaced parameter values. This is a fine enough approach if you have one or two tunable parameters, but can become computationally infeasible. See the chapter on ['iterative search'](https://www.tmwr.org/iterative-search.html) from ['Tidy Modeling with R'](https://www.tmwr.org/) for more information.
 
 We can use the `tune_grid()` function to perform hyperparameter tuning using a grid search. `tune_grid()` needs 3 different things;
 
-a `workflow` object containing the model and preprocessor,
-a `rset` object containing the resamples the workflow should be fitted within, and
-a tibble containing the parameter values to be evaluated.
+a `workflow` object containing the model and preprocessor, a `rset` object containing the resamples the workflow should be fitted within, and a tibble containing the parameter values to be evaluated.
 
-Optionally, a metric set of performance metrics can be supplied for evaluation. If you don’t set one, then a default set of performance metrics is used.
+Optionally, a metric set of performance metrics can be supplied for evaluation. If you don't set one, then a default set of performance metrics is used.
 
 We already have a `resample` object created in `Hitters_fold`. Now we should create the workflow specification.
 
@@ -189,11 +188,11 @@ penalty_grid
 
 #### Activities
 
-- What does `step_novel()` do? Why might it be useful?
-- How does `penalty_grid` change if you set `levels = 100`? `levels = 10`?
-- Investigate the other `grid` functions in `tidymodels`. Try one of them out here. What do you notice?
+-   What does `step_novel()` do? Why might it be useful?
+-   How does `penalty_grid` change if you set `levels = 100`? `levels = 10`?
+-   Investigate the other `grid` functions in `tidymodels`. Try one of them out here. What do you notice?
 
-Using 50 levels for one parameter might seem overkill, and in many applications it is. But remember that `glmnet` fits all the models in one go, so adding more levels to `penalty` doesn’t affect the computational speed much for linear or logistic regression.
+Using 50 levels for one parameter might seem overkill, and in many applications it is. But remember that `glmnet` fits all the models in one go, so adding more levels to `penalty` doesn't affect the computational speed much for linear or logistic regression.
 
 Now we have everything we need and we can fit all the models.
 
@@ -213,13 +212,13 @@ The output of `tune_grid()` can be hard to read by itself, unprocessed. `autoplo
 autoplot(tune_res)
 ```
 
-Here we see that the amount of regularization affects the performance metrics differently. Note how there are areas where the amount of regularization doesn’t have any meaningful influence on the coefficient estimates. We can also see the raw metrics that created this chart by calling `collect_metrics()`.
+Here we see that the amount of regularization affects the performance metrics differently. Note how there are areas where the amount of regularization doesn't have any meaningful influence on the coefficient estimates. We can also see the raw metrics that created this chart by calling `collect_metrics()`.
 
 ```{r}
 collect_metrics(tune_res)
 ```
 
-The “best” values of this can be selected using `select_best()`; this function requires you to specify a matric that it should use to select.
+The "best" values of this can be selected using `select_best()`; this function requires you to specify a matric that it should use to select.
 
 ```{r}
 best_penalty <- select_best(tune_res, metric = "rsq")
@@ -243,7 +242,7 @@ augment(ridge_final_fit, new_data = Hitters_test) %>%
 
 #### Activities
 
-- Evaluate the performance of this model. Look at the parameter estimates for the training data. What does this tell you about the parameters?
+-   Evaluate the performance of this model. Look at the parameter estimates for the training data. What does this tell you about the parameters?
 
 ## Lasso Regression
 
@@ -310,9 +309,9 @@ augment(ridge_final_fit, new_data = Hitters_test) %>%
 
 #### Activities
 
-- Which model, ridge or lasso, performed best on the testing data?
+-   Which model, ridge or lasso, performed best on the testing data?
 
-- Instead of using `select_best()`, try selecting by one standard error, and refit to the training and testing sets. Does anything change?
+-   Instead of using `select_best()`, try selecting by one standard error, and refit to the training and testing sets. Does anything change?
 
 ## Resources
 
