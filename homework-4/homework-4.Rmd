@@ -15,70 +15,99 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE,
 
 ## Resampling
 
-For this assignment, we will continue working with part of a [Kaggle data set](https://www.kaggle.com/c/titanic/overview) that was the subject of a machine learning competition and is often used for practicing ML models. The goal is classification; specifically, to predict which passengers would survive the [Titanic shipwreck](https://en.wikipedia.org/wiki/Titanic).
+For this assignment, we will be working with **two** of our previously used data sets, one for classification and one for regression. For the classification problem, our goal is (once again) to predict which passengers would survive the [Titanic shipwreck](https://en.wikipedia.org/wiki/Titanic). For the regression problem, our goal is (also once again) to predict abalone age.
 
-![Fig. 1: RMS Titanic departing Southampton on April 10, 1912.](images/RMS_Titanic.jpg){width="363"}
+Load the data from `data/titanic.csv` and `data/abalone.csv` into *R* and refresh your memory about the variables they contain using their codebooks.
 
-Load the data from `data/titanic.csv` into *R* and familiarize yourself with the variables it contains using the codebook (`data/titanic_codebook.txt`).
-
-Notice that `survived` and `pclass` should be changed to factors. When changing `survived` to a factor, you may want to reorder the factor so that *"Yes"* is the first level.
-
-Make sure you load the `tidyverse` and `tidymodels`!
+Make sure to change `survived` and `pclass` to factors, as before, and make sure to load the `tidyverse` and `tidymodels`!
 
 *Remember that you'll need to set a seed at the beginning of the document to reproduce your results.*
 
-Create a recipe for this dataset **identical** to the recipe you used in Homework 3.
+### Section 1: Regression (abalone age)
 
-```{r}
-library(tidyverse)
-library(tidymodels)
-titanic <- read_csv("data/titanic.csv")
-```
+#### Question 1
 
+Follow the instructions from [Homework 2]{.underline} to split the data set, stratifying on the outcome variable, `age`. You can choose the proportions to split the data into. Use *k*-fold cross-validation to create 5 folds from the training set.
 
-### Question 1
+Set up the same recipe from [Homework 2]{.underline}.
 
-Split the data, stratifying on the outcome variable, `survived.`  You should choose the proportions to split the data into. Verify that the training and testing data sets have the appropriate number of observations. 
+#### Question 2
 
-### Question 2
+In your own words, explain what we are doing when we perform *k*-fold cross-validation:
 
-Fold the **training** data. Use *k*-fold cross-validation, with $k = 10$.
+-   What **is** *k*-fold cross-validation?
 
-### Question 3
+-   Why should we use it, rather than simply comparing our model results on the entire training set?
 
-In your own words, explain what we are doing in Question 2. What is *k*-fold cross-validation? Why should we use it, rather than simply fitting and testing models on the entire training set? If we **did** use the entire training set, what resampling method would that be?
+-   If we split the training set into two and used one of those splits to compare our models, what resampling method would we be using?
 
-### Question 4
+#### Question 3
 
-Set up workflows for 3 models:
+Set up workflows for three models:
 
-1. A logistic regression with the `glm` engine;
-2. A linear discriminant analysis with the `MASS` engine;
-3. A quadratic discriminant analysis with the `MASS` engine.
+1.  *k*-nearest neighbors with the `kknn` engine, tuning `neighbors`;
+2.  linear regression;
+3.  elastic net regression, tuning `penalty` and `mixture`.
 
-How many models, total, across all folds, will you be fitting to the data? To answer, think about how many folds there are, and how many models you'll fit to each fold.
+Use `grid_regular` to set up grids of values for all of the parameters we're tuning. Use values of `neighbors` from $1$ to \$10\$, the default values of penalty, and values of mixture from $0$ to $1$. Set up 10 levels of each.
 
-### Question 5
+How many models total, **across all folds**, will we be fitting to the data? To answer, think about how many folds there are, how many combinations of model parameters there are, and how many models you'll fit to each fold.
 
-Fit each of the models created in Question 4 to the folded data.
+#### Question 4
 
-**IMPORTANT:** *Some models may take a while to run – anywhere from 3 to 10 minutes. You should NOT re-run these models each time you knit. Instead, run them once, using an R script, and store your results; look into the use of [loading and saving](https://www.r-bloggers.com/2017/04/load-save-and-rda-files/). You should still include the code to run them when you knit, but set `eval = FALSE` in the code chunks.*
+Fit all the models you created in Question 3 to your folded data.
 
-### Question 6
+*Suggest using `tune_grid()`; see the documentation and examples included for help by running `?tune_grid`*. *You can also see the code in **Lab 4** for help with the tuning process.*
 
-Use `collect_metrics()` to print the mean and standard errors of the performance metric *accuracy* across all folds for each of the four models.
+#### Question 5
 
-Decide which of the 3 fitted models has performed the best. Explain why. *(Note: You should consider both the mean accuracy and its standard error.)*
+Use `collect_metrics()` to print the mean and standard errors of the performance metric ***root mean squared error (RMSE)*** for each model across folds.
 
-### Question 7
+Decide which of the models has performed the best. Explain why you made this decision. Note that each value of the tuning parameter(s) is considered a different model; for instance, KNN with $k = 4$ is one model, KNN with $k = 2$ another.
 
-Now that you’ve chosen a model, fit your chosen model to the entire training dataset (not to the folds).
+*(You should consider both the mean RMSE and the standard error.)*
 
-### Question 8
+#### Question 6
 
-Finally, with your fitted model, use `predict()`, `bind_cols()`, and `accuracy()` to assess your model’s performance on the testing data!
+Use `finalize_workflow()` and `fit()` to fit your chosen model to the entire **training set**.
 
-Compare your model’s testing accuracy to its average accuracy across folds. Describe what you see.
+Lastly, use `augment()` to assess the performance of your chosen model on your **testing set**. Compare your model's **testing** RMSE to its average RMSE across folds.
+
+### Section 2: Classification (Titanic survival)
+
+#### Question 7
+
+Follow the instructions from [Homework 3]{.underline} to split the data set, stratifying on the outcome variable, `survived`. You can choose the proportions to split the data into. Use *k*-fold cross-validation to create 5 folds from the training set.
+
+#### Question 8
+
+Set up the same recipe from [Homework 3]{.underline} -- but this time, add a step to **upsample** the outcome variable, so that there are equal proportions of the `Yes` and `No` levels. *Note: See the document "Handling Imbalanced Outcomes" for assistance.*
+
+#### Question 9
+
+Set up workflows for three models:
+
+1.  *k*-nearest neighbors with the `kknn` engine, tuning `neighbors`;
+2.  linear regression;
+3.  elastic net regression, tuning `penalty` and `mixture`.
+
+Set up the grids, etc. the same way you did in Question 3. Note that you can reuse the same grids of parameter values.
+
+#### Question 10
+
+Fit all the models you created in Question 9 to your folded data.
+
+#### Question 11
+
+Use `collect_metrics()` to print the mean and standard errors of the performance metric ***area under the ROC curve*** for each model across folds.
+
+Decide which of the models has performed the best. Explain why you made this decision.
+
+#### Question 12
+
+Use `finalize_workflow()` and `fit()` to fit your chosen model to the entire **training set**.
+
+Lastly, use `augment()` to assess the performance of your chosen model on your **testing set**. Compare your model's **testing** ROC AUC to its average ROC AUC across folds.
 
 ## Required for 231 Students
 
@@ -90,10 +119,12 @@ $$
 
 where $\beta$ is the parameter that we want to estimate. Suppose that we have $n$ observations of the response, i.e. $y_{1}, ..., y_{n}$, with uncorrelated errors.
 
-### Question 9
+### Question 13
 
 Derive the least-squares estimate of $\beta$.
 
-### Question 10
+### Question 14
 
-Suppose that we perform leave-one-out cross-validation (LOOCV). Recall that, in LOOCV, we divide the data into $n$ folds. What is the covariance between $\hat{\beta}^{(1)}$, or the least-squares estimator of $\beta$ that we obtain by taking the first fold as a training set, and $\hat{\beta}^{(2)}$, the least-squares estimator of $\beta$ that we obtain by taking the second fold as a training set?
+Suppose that we perform leave-one-out cross-validation (LOOCV). Recall that, in LOOCV, we divide the data into $n$ folds.
+
+Derive the covariance between $\hat{\beta}^{(1)}$, or the least-squares estimator of $\beta$ that we obtain by taking the first fold as a training set, and $\hat{\beta}^{(2)}$, the least-squares estimator of $\beta$ that we obtain by taking the second fold as a training set?
