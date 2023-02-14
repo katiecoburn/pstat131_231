@@ -32,6 +32,7 @@ library(ISLR2)
 library(tidyverse)
 library(glmnet)
 library(modeldata)
+library(ggthemes)
 library(janitor) # for naming conventions
 library(naniar) # to assess missing data patterns
 library(corrplot) # for a correlation plot
@@ -139,13 +140,74 @@ mlc_train %>%
   corrplot(type = "lower", diag = FALSE)
 ```
 
-We can see something interesting here -- the only strong linear correlations are between each of the `_charge` variables and their corresponding `_minutes` variables, and these correlations are very strong. In fact, if you look at `cor()` directly or add `method = "number"` to `corrplot()`, you can see that these correlations are exactly $1.00$. We'll handle this collinearity by simply excluding one of each of these variable pairs from our recipe.
+We can see something interesting here -- the only strong linear correlations are between each of the `_charge` variables and their corresponding `_minutes` variables, and these correlations are very strong. In fact, if you look at `cor()` directly or add `method = "number"` to `corrplot()`, you can see that these correlations are exactly $1.00$.
+
+We'll handle this collinearity by simply excluding one of each of these variable pairs from our recipe. This is also a good opportunity to drop `state` and `area_code`, since there are a lot of levels of each, making it a little tricky to format them for inclusion in the models. The next code chunk removes these variables from the data entirely and re-splits the data:
+
+```{r}
+set.seed(3435)
+mlc_churn <- mlc_churn %>% 
+  select(-c(total_day_charge, total_eve_charge, total_night_charge,
+            total_intl_charge))
+mlc_split <- initial_split(mlc_churn, strata = "churn", prop = 0.75)
+
+mlc_train <- training(mlc_split)
+mlc_test <- testing(mlc_split)
+
+mlc_fold <- vfold_cv(mlc_train, v = 10)
+```
+
+It's also useful to look at the distribution of the outcome for our classification problem in particular:
+
+```{r}
+mlc_train %>% 
+  ggplot(aes(x = churn)) + geom_bar() +
+  theme_bw()
+```
+
+There is definitely a class imbalance here. We can get the exact proportions:
+
+```{r}
+mlc_train %>% 
+  group_by(churn) %>% 
+  summarise(prop = n()/(dim(mlc_train)[1]))
+```
+
+Approximately $86\%$ of customers in the training data set did not churn, while only $14\%$ of them did. This imbalance will likely make it difficult for the model to learn to predict `yes` accurately, so we'll try to adjust for it later in the recipe.
 
 ## Ridge Regression
 
 `parsnip` does not have a dedicated function to create a ridge regression model specification; we need to use **either** `linear_reg()` or `logistic_reg()` and set `mixture = 0` to specify a ridge model. The `mixture` argument specifies the amount of different types of regularization; `mixture = 0` specifies only ridge regularization and `mixture = 1` specifies only lasso regularization. Setting `mixture` to a value between 0 and 1 lets us use both, which results in a mixture of L1 and L2 regularization, or what is often called an "elastic net."
 
-When using the `glmnet` engine, we also need to set a penalty to be able to fit the model. We will set this value to 0 for now; it is not necessarily the best value, but we will look at how to select the best value in a little bit.
+When using the `glmnet` engine, we also need to set a penalty to be able to fit the model. This `penalty` argument corresponds to $\lambda$ in the slides and textbook. Generally, we'll select the optimal value of $\lambda$ by tuning; its value can essentially range between \$0\$, which is equivalent to traditional linear or logistic regression, and an upper limit of positive infinity.
+
+We'll set up models for both the regression and classification problems here. First, the regression problem. Note that we `prep()` and `bake()` the recipe after setting it up. This is not necessary, but is almost always recommended; without doing so, we wouldn't notice any errors in the recipe until the models were fit, and at that point it could be hard to trace the errors back.
+
+```{r}
+hitters_recipe <- recipe(salary ~ . , data = hitters_train) %>% 
+  step_dummy(all_nominal_predictors()) %>% 
+  step_normalize(all_predictors()) %>% 
+  step_pca(hits, hm_run, runs, rbi, walks, 
+           num_comp = 1, prefix = "first_pc") %>% 
+  step_pca(years, c_hits, c_runs, crbi, c_walks, c_at_bat,
+           num_comp = 1, prefix = "second_pc")
+
+prep(hitters_recipe) %>% bake(new_data = hitters_train)
+```
+
+We normalize all the predictors first, as is generally recommended when conducting PCA, so that they are all on the same scale. (PCA will be discussed in more depth later in the course.)
+
+Next the model for classification, which is simpler:
+
+```{r}
+churn_recipe <- recipe(churn ~ ., data = mlc_train) %>% 
+    step_dummy(all_nominal_predictors()) %>% 
+  
+
+prep(churn_recipe) %>% bake(new_data = mlc_train)
+```
+
+We will set this value to 0 for now; it is not necessarily the best value, but we will look at how to select the best value in a little bit.
 
 Here, we start out by fitting a ridge regression to the entire training set. In the next section, we'll tune it by fitting it to the folds, to select the optimal value of `penalty`.
 

@@ -1581,17 +1581,17 @@ border-radius: 0px;
 <div id="resampling" class="section level2">
 <h2>Resampling</h2>
 <p>For this assignment, we will be working with <strong>two</strong> of
-our previously used data sets, one for classification and one for
+our previously used data sets – one for classification and one for
 regression. For the classification problem, our goal is (once again) to
-predict which passengers would survive the <a href="https://en.wikipedia.org/wiki/Titanic">Titanic shipwreck</a>. For
-the regression problem, our goal is (also once again) to predict abalone
+predict which passengers would survive the Titanic shipwreck. For the
+regression problem, our goal is (also once again) to predict abalone
 age.</p>
 <p>Load the data from <code>data/titanic.csv</code> and
 <code>data/abalone.csv</code> into <em>R</em> and refresh your memory
-about the variables they contain using their codebooks.</p>
+about the variables they contain using their attached codebooks.</p>
 <p>Make sure to change <code>survived</code> and <code>pclass</code> to
-factors, as before, and make sure to load the <code>tidyverse</code> and
-<code>tidymodels</code>!</p>
+factors, as before, and make sure to generate the <code>age</code>
+variable as <code>rings</code> + 1.5!</p>
 <p><em>Remember that you’ll need to set a seed at the beginning of the
 document to reproduce your results.</em></p>
 <div id="section-1-regression-abalone-age" class="section level3">
@@ -1613,9 +1613,9 @@ cross-validation to create 5 folds from the training set.</p>
 cross-validation?</p></li>
 <li><p>Why should we use it, rather than simply comparing our model
 results on the entire training set?</p></li>
-<li><p>If we split the training set into two and used one of those
-splits to compare our models, what resampling method would we be
-using?</p></li>
+<li><p>If we split the training set into two and used one of those two
+splits to evaluate/compare our models, what resampling method would we
+be using?</p></li>
 </ul>
 </div>
 <div id="question-3" class="section level4">
@@ -1625,17 +1625,18 @@ using?</p></li>
 <li><em>k</em>-nearest neighbors with the <code>kknn</code> engine,
 tuning <code>neighbors</code>;</li>
 <li>linear regression;</li>
-<li>elastic net regression, tuning <code>penalty</code> and
-<code>mixture</code>.</li>
+<li>elastic net <strong>linear</strong> regression, tuning
+<code>penalty</code> and <code>mixture</code>.</li>
 </ol>
 <p>Use <code>grid_regular</code> to set up grids of values for all of
 the parameters we’re tuning. Use values of <code>neighbors</code> from
-<span class="math inline">\(1\)</span> to $10$, the default values of
-penalty, and values of mixture from <span class="math inline">\(0\)</span> to <span class="math inline">\(1\)</span>. Set up 10 levels of each.</p>
+<span class="math inline">\(1\)</span> to <span class="math inline">\(10\)</span>, the default values of penalty, and
+values of mixture from <span class="math inline">\(0\)</span> to <span class="math inline">\(1\)</span>. Set up 10 levels of each.</p>
 <p>How many models total, <strong>across all folds</strong>, will we be
-fitting to the data? To answer, think about how many folds there are,
-how many combinations of model parameters there are, and how many models
-you’ll fit to each fold.</p>
+fitting to the <strong>abalone</strong> <strong>data</strong>? To
+answer, think about how many folds there are, how many combinations of
+model parameters there are, and how many models you’ll fit to each
+fold.</p>
 </div>
 <div id="question-4" class="section level4">
 <h4>Question 4</h4>
@@ -1650,11 +1651,9 @@ the tuning process.</em></p>
 <p>Use <code>collect_metrics()</code> to print the mean and standard
 errors of the performance metric <strong><em>root mean squared error
 (RMSE)</em></strong> for each model across folds.</p>
-<p>Decide which of the models has performed the best. Explain why you
-made this decision. Note that each value of the tuning parameter(s) is
-considered a different model; for instance, KNN with <span class="math inline">\(k = 4\)</span> is one model, KNN with <span class="math inline">\(k = 2\)</span> another.</p>
-<p><em>(You should consider both the mean RMSE and the standard
-error.)</em></p>
+<p>Decide which of the models has performed the best. Explain how/why
+you made this decision. Note that each value of the tuning parameter(s)
+is considered a different model; for instance, KNN with <span class="math inline">\(k = 4\)</span> is one model, KNN with <span class="math inline">\(k = 2\)</span> another.</p>
 </div>
 <div id="question-6" class="section level4">
 <h4>Question 6</h4>
@@ -1676,11 +1675,11 @@ cross-validation to create 5 folds from the training set.</p>
 </div>
 <div id="question-8" class="section level4">
 <h4>Question 8</h4>
-<p>Set up the same recipe from <u>Homework 3</u> – but this time, add a
-step to <strong>upsample</strong> the outcome variable, so that there
-are equal proportions of the <code>Yes</code> and <code>No</code>
-levels. <em>Note: See the document “Handling Imbalanced Outcomes” for
-assistance.</em></p>
+<p>Set up the same recipe from <u>Homework 3</u> – but this time, add
+<code>step_upsample()</code> so that there are equal proportions of the
+<code>Yes</code> and <code>No</code> levels (you’ll need to specify the
+appropriate function arguments). <em>Note: See Lab 5 for code/tips on
+handling imbalanced outcomes.</em></p>
 </div>
 <div id="question-9" class="section level4">
 <h4>Question 9</h4>
@@ -1688,12 +1687,13 @@ assistance.</em></p>
 <ol style="list-style-type: decimal">
 <li><em>k</em>-nearest neighbors with the <code>kknn</code> engine,
 tuning <code>neighbors</code>;</li>
-<li>linear regression;</li>
-<li>elastic net regression, tuning <code>penalty</code> and
-<code>mixture</code>.</li>
+<li>logistic regression;</li>
+<li>elastic net <strong>logistic</strong> regression, tuning
+<code>penalty</code> and <code>mixture</code>.</li>
 </ol>
 <p>Set up the grids, etc. the same way you did in Question 3. Note that
-you can reuse the same grids of parameter values.</p>
+you can use the same grids of parameter values without having to
+recreate them.</p>
 </div>
 <div id="question-10" class="section level4">
 <h4>Question 10</h4>
@@ -1704,8 +1704,8 @@ you can reuse the same grids of parameter values.</p>
 <p>Use <code>collect_metrics()</code> to print the mean and standard
 errors of the performance metric <strong><em>area under the ROC
 curve</em></strong> for each model across folds.</p>
-<p>Decide which of the models has performed the best. Explain why you
-made this decision.</p>
+<p>Decide which of the models has performed the best. Explain how/why
+you made this decision.</p>
 </div>
 <div id="question-12" class="section level4">
 <h4>Question 12</h4>

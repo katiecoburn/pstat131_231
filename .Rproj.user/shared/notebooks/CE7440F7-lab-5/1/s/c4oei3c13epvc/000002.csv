@@ -1,7 +1,0 @@
-"0","set.seed(3435)"
-"0","Hitters_split <- initial_split(Hitters, strata = ""Salary"")"
-"0",""
-"0","Hitters_train <- training(Hitters_split)"
-"0","Hitters_test <- testing(Hitters_split)"
-"0",""
-"0","Hitters_fold <- vfold_cv(Hitters_train, v = 10)"
