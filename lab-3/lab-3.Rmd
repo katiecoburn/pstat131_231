@@ -464,6 +464,8 @@ Finally, let's look at an ROC curve on the testing data:
 augment(smarketqda_fit, new_data = smarket_test) %>%
   roc_curve(Direction, .pred_Down) %>%
   autoplot()
+
+augment(smarketqda_fit, new_data = smarket_test)
 ```
 
 We'll fit the logistic regression to the `OJ` testing set, since it also performed best on the training set, with the same caveats, and view the same things:

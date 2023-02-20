@@ -1700,7 +1700,8 @@ set; this will be our <strong>validation set</strong>. We’ll
 performance on the validation set, and ultimately fit our best-fitting
 modelto the <strong>testing set</strong> and <strong>evaluate</strong>
 its performance.</p>
-<pre class="r"><code>Auto_valid &lt;- validation_split(Auto_train, prop = .75, strata = mpg)</code></pre>
+<pre class="r"><code>Auto_valid &lt;- validation_split(Auto_train, prop = .75, 
+                               strata = mpg)</code></pre>
 <p>Before we move on, it is important to reiterate that you should
 <strong>only</strong> use the <strong>testing</strong> data set
 <strong>once</strong>! Once you have assessed your model’s performance

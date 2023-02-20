@@ -307,6 +307,8 @@ ridge_spec <-
   linear_reg(penalty = tune(), mixture = 0) %>% 
   set_mode("regression") %>% 
   set_engine("glmnet")
+
+[[1]]
 ```
 
 Now we combine to create a `workflow` object.
@@ -409,7 +411,7 @@ lasso_workflow <- workflow() %>%
 While we are doing a different kind of regularization, we still use the same `penalty` argument. We've picked a different range for the values of `penalty`, since we know it will be a good range. You would, in practice, have to search a wide range of values at first, then narrow in on a range of interest.
 
 ```{r}
-penalty_grid <- grid_regular(penalty(range = c(-2, 2)), levels = 50)
+penalty_grid <- grid_regular(penalty(range = c(-10, 0)), levels = 50)
 ```
 
 And we can use `tune_grid()` again.

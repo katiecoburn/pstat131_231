@@ -46,10 +46,9 @@ titanic <- read_csv("data/titanic.csv") %>%
   mutate(survived = factor(survived, levels = c("Yes", "No")))
 ```
 
-
 ### Question 1
 
-Split the data, stratifying on the outcome variable, `survived.`  You should choose the proportions to split the data into. Verify that the training and testing data sets have the appropriate number of observations. 
+Split the data, stratifying on the outcome variable, `survived.` You should choose the proportions to split the data into. Verify that the training and testing data sets have the appropriate number of observations.
 
 ```{r}
 set.seed(3435)
@@ -71,7 +70,7 @@ titanic_recipe <- recipe(survived ~ pclass + sex + age +
   step_interact(~ starts_with("sex"):fare + age:fare)
 ```
 
-*Most proportions are acceptable here as long as it's greater than $0.50$, so more observations are in training than testing, and less than $0.99$, so there are at least some observations in testing.* 
+*Most proportions are acceptable here as long as it's greater than* $0.50$, so more observations are in training than testing, and less than $0.99$, so there are at least some observations in testing.
 
 ### Question 2
 
@@ -96,9 +95,9 @@ In your own words, explain what we are doing in Question 2. What is *k*-fold cro
 
 Set up workflows for 3 models:
 
-1. A logistic regression with the `glm` engine;
-2. A linear discriminant analysis with the `MASS` engine;
-3. A quadratic discriminant analysis with the `MASS` engine.
+1.  A logistic regression with the `glm` engine;
+2.  A linear discriminant analysis with the `MASS` engine;
+3.  A quadratic discriminant analysis with the `MASS` engine.
 
 ```{r}
 log_reg <- logistic_reg() %>% 
@@ -134,7 +133,7 @@ How many models, total, across all folds, will you be fitting to the data? To an
 
 Fit each of the models created in Question 4 to the folded data.
 
-**IMPORTANT:** *Some models may take a while to run – anywhere from 3 to 10 minutes. You should NOT re-run these models each time you knit. Instead, run them once, using an R script, and store your results; look into the use of [loading and saving](https://www.r-bloggers.com/2017/04/load-save-and-rda-files/). You should still include the code to run them when you knit, but set `eval = FALSE` in the code chunks.*
+**IMPORTANT:** *Some models may take a while to run -- anywhere from 3 to 10 minutes. You should NOT re-run these models each time you knit. Instead, run them once, using an R script, and store your results; look into the use of [loading and saving](https://www.r-bloggers.com/2017/04/load-save-and-rda-files/). You should still include the code to run them when you knit, but set `eval = FALSE` in the code chunks.*
 
 ```{r}
 log_fit <- fit_resamples(log_wkflow, titanic_folds)
@@ -161,7 +160,7 @@ collect_metrics(qda_fit)
 
 ### Question 7
 
-Now that you’ve chosen a model, fit your chosen model to the entire training dataset (not to the folds).
+Now that you've chosen a model, fit your chosen model to the entire training dataset (not to the folds).
 
 ```{r}
 log_fit_train <- fit(log_wkflow, titanic_train)
@@ -169,9 +168,9 @@ log_fit_train <- fit(log_wkflow, titanic_train)
 
 ### Question 8
 
-Finally, with your fitted model, use `predict()`, `bind_cols()`, and `accuracy()` to assess your model’s performance on the testing data!
+Finally, with your fitted model, use `predict()`, `bind_cols()`, and `accuracy()` to assess your model's performance on the testing data!
 
-Compare your model’s testing accuracy to its average accuracy across folds. Describe what you see.
+Compare your model's testing accuracy to its average accuracy across folds. Describe what you see.
 
 ```{r}
 log_test <- fit(log_wkflow, titanic_test)
@@ -210,8 +209,7 @@ $$
 
 $$
 E[Y] = \beta+0
-$$
-$$
+$$ $$
 \hat{\beta}=\bar{Y}
 $$
 
@@ -219,9 +217,9 @@ $$
 
 Suppose that we perform leave-one-out cross-validation (LOOCV). Recall that, in LOOCV, we divide the data into $n$ folds. What is the covariance between $\hat{\beta}^{(1)}$, or the least-squares estimator of $\beta$ that we obtain by taking the first fold as a training set, and $\hat{\beta}^{(2)}$, the least-squares estimator of $\beta$ that we obtain by taking the second fold as a training set?
 
-*In order to find the least-squares estimate of $\beta$, we want to minimize $\sum_{i=1}^{n}(y_{i}-\hat{\beta})^2$.*
+*In order to find the least-squares estimate of* $\beta$, we want to minimize $\sum_{i=1}^{n}(y_{i}-\hat{\beta})^2$.
 
-*The first-order condition with respect to $\hat{\beta}$ is:*
+*The first-order condition with respect to* $\hat{\beta}$ is:
 
 $$
 -2\sum_{i=1}^{n}(y_{i}-\hat{\beta})=0
@@ -239,7 +237,7 @@ $$
 \hat{\beta}_{OLS}=\bar{y}
 $$
 
-*We know that $\hat{\beta}^{(1)} = \frac{1}{n-1}\sum_{i\neq1}^{n}y_{i}$ and $\hat{\beta}^{(2)} = \frac{1}{n-1}\sum_{i\neq2}^{n}y_{i}$. So the covariance formula is:*
+*We know that* $\hat{\beta}^{(1)} = \frac{1}{n-1}\sum_{i\neq1}^{n}y_{i}$ and $\hat{\beta}^{(2)} = \frac{1}{n-1}\sum_{i\neq2}^{n}y_{i}$. So the covariance formula is:
 
 $$
 Cov(\hat{\beta}^{(1)} \hat{\beta}^{(2)}) = Cov(\frac{1}{n-1}\sum_{i\neq1}^{n}y_{i} \frac{1}{n-1}\sum_{i\neq2}^{n}y_{i})
