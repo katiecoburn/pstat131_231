@@ -1,0 +1,398 @@
+---
+title: "Lab 5: Regularized Regression"
+author: "PSTAT 131/231"
+output:
+    html_document:
+      toc: true
+      toc_float: true
+      code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE,
+                      warning = FALSE)
+```
+
+## Introduction
+
+This lab will take a look at (1) regularized regression models and (2) their corresponding hyperparameter tuning for both **linear** and **logistic** regression, along with (3) methods for handling imbalanced categorical outcomes like **upsampling** and **downsampling**.
+
+This chapter will use ['parsnip'](https://www.tidymodels.org/start/models/) for model fitting and ['recipes and workflows'](https://www.tidymodels.org/start/recipes/) to perform the transformations, and ['tune and dials'](https://www.tidymodels.org/start/tuning/) to tune the hyperparameters of the model. All these packages are automatically installed and loaded along with the `tidymodels` suite of packages.
+
+Note that regularization -- ridge and lasso, etc. -- can be used for **both linear and logistic regression**.
+
+### Loading Packages
+
+We load `tidymodels` for modeling functions, `ISLR` and `ISLR2` for data sets, and the `tidyverse`. We also need to load the `glmnet` package, since we'll use it as the engine for the regularized regressions.
+
+```{r}
+library(tidymodels)
+library(ISLR)
+library(ISLR2)
+library(tidyverse)
+library(glmnet)
+library(modeldata)
+library(janitor) # for naming conventions
+library(naniar) # to assess missing data patterns
+library(corrplot) # for a correlation plot
+tidymodels_prefer()
+```
+
+### Data
+
+We'll be working with two data sets for this lab, one to illustrate a regression problem and one to illustrate a classification problem.
+
+#### Regression: Baseball salaries
+
+For regression, we'll use the `Hitters` data set; `Hitters` is included in the `ISLR` package, so we can use it once we've loaded that package. Our goal to predict baseball players' `Salary` based on several different characteristics which are included in the data set, like their number of times at bat, number of hits, division, etc.
+
+We'll read the data in and use `head()` to view the first few rows:
+
+```{r}
+hitters <- as_tibble(Hitters)
+head(hitters)
+```
+
+This is as good a time as any to introduce the `janitor` package. The `janitor` package contains a number of helper functions that can expedite parts of data cleaning; however, personally, I find myself most often using its `clean_names()` function. Try running `?clean_names` to see if you can determine what the function does before reading on.
+
+When we download or otherwise obtain data that is "real" (as in not simulated), the column names, or variable names, may not all be in the same [case](https://www.freecodecamp.org/news/programming-naming-conventions-explained/), or they may be in a case that isn't easy to work with. It can be helpful to change all column names so that they follow one universal [naming convention](https://www.freecodecamp.org/news/programming-naming-conventions-explained/). We can do that with `clean_names()`, which by default will make all columns snake case:
+
+```{r}
+hitters <- hitters %>% 
+  clean_names()
+head(hitters)
+```
+
+We start, as normal, by splitting the data into training and testing sets using stratified sampling; we'll also use *k*-fold cross-validation with $k = 10$ to fold the training set.
+
+```{r}
+set.seed(3435)
+hitters_split <- initial_split(hitters, strata = "salary", prop = 0.75)
+
+hitters_train <- training(hitters_split)
+hitters_test <- testing(hitters_split)
+
+hitters_fold <- vfold_cv(hitters_train, v = 10)
+```
+
+We can visualize missingness within the data -- let's look at the whole data set prior to splitting to see the complete amount:
+
+```{r}
+vis_miss(hitters)
+```
+
+And let's visualize a correlation matrix of the numeric variables:
+
+```{r}
+hitters_train %>% 
+  select(is.numeric) %>% # selecting numeric columns
+  cor(use = "pairwise.complete.obs") %>% # handling missing data in Salary
+  corrplot(type = "lower", diag = FALSE) # printing lower half of matrix
+  # and not including the correlations of 1 on the diagonal
+```
+
+There seem to be strong positive linear correlations between `years`, `c_hits`, `c_runs`, `crbi`, and `c_walks`. There are also strong positive correlations between `at_bat`, `hits`, `runs`, `rbi`, and `walks`. We'll try including `step_pca()` to combat this collinearity.
+
+#### Activities
+
+-   Access the help page for `Hitters`. Familiarize yourself with the predictor variables and any other useful information about the data.
+-   What variables are correlated with `Salary`?
+-   How do you think you might choose to handle the missing data in this data set, and why might you choose to handle it that way?
+-   Are there any correlations in the data that surprised you? Why or why not?
+
+#### Classification: Customer churn
+
+For classification, we'll use the `mlc_churn` data set, which is part of the `modeldata` package. It contains a simulated data set that is provided with certain machine learning software to practice predicting customer churn. Customer churn is the specific name for customer attrition, or whether or not customers stop doing business with an entity or organization. It's generally in a business' best interest to retain as many customers as possible and minimize attrition, so a model that can accurately predict when customers will stop doing business somewhere is very useful.
+
+Again, note that this is simulated data; it's somewhat difficult to find real data on churn rates that is freely available, likely because businesses may be reluctant to make that data public. This data represents churn at a **phone company**, as indicated by the predictors related to things like daytime minutes and calls, nighttime minutes and calls, and international minutes and calls, etc. The outcome variable is `churn`.
+
+We'll read the data in and use `head()` to view the first few rows. We don't need to use `clean_names()` here; the columns are already named consistently, using snake case.
+
+```{r}
+mlc_churn <- modeldata::mlc_churn %>% 
+  as_tibble()
+
+mlc_churn %>% 
+  head()
+```
+
+And we'll split it and fold it:
+
+```{r}
+set.seed(3435)
+mlc_split <- initial_split(mlc_churn, strata = "churn", prop = 0.75)
+
+mlc_train <- training(mlc_split)
+mlc_test <- testing(mlc_split)
+
+mlc_fold <- vfold_cv(mlc_train, v = 10)
+```
+
+Normally it would be useful to check for missing data, but the data are simulated and we actually already know none of it is missing. However, you can try running `vis_miss()` anyway to verify.
+
+Let's look at a correlation matrix:
+
+```{r}
+mlc_train %>% 
+  select(is.numeric) %>% # selecting numeric columns
+  cor() %>%
+  corrplot(type = "lower", diag = FALSE)
+```
+
+We can see something interesting here -- the only strong linear correlations are between each of the `_charge` variables and their corresponding `_minutes` variables, and these correlations are very strong. In fact, if you look at `cor()` directly or add `method = "number"` to `corrplot()`, you can see that these correlations are exactly $1.00$. We'll handle this collinearity by simply excluding one of each of these variable pairs from our recipe.
+
+## Ridge Regression
+
+`parsnip` does not have a dedicated function to create a ridge regression model specification; we need to use **either** `linear_reg()` or `logistic_reg()` and set `mixture = 0` to specify a ridge model. The `mixture` argument specifies the amount of different types of regularization; `mixture = 0` specifies only ridge regularization and `mixture = 1` specifies only lasso regularization. Setting `mixture` to a value between 0 and 1 lets us use both, which results in a mixture of L1 and L2 regularization, or what is often called an "elastic net."
+
+When using the `glmnet` engine, we also need to set a penalty to be able to fit the model. We will set this value to 0 for now; it is not necessarily the best value, but we will look at how to select the best value in a little bit.
+
+Here, we start out by fitting a ridge regression to the entire training set. In the next section, we'll tune it by fitting it to the folds, to select the optimal value of `penalty`.
+
+```{r}
+ridge_spec <- linear_reg(mixture = 0, penalty = 0) %>%
+  set_mode("regression") %>%
+  set_engine("glmnet")
+```
+
+Once the specification is created, we can fit it to our data. We will use all the predictors.
+
+```{r}
+ridge_fit <- fit(ridge_spec, Salary ~ ., data = Hitters_train)
+```
+
+The `glmnet` package will fit the model for all values of `penalty` at once, so let us see what the parameter estimates for the model is now that we have `penalty = 0`.
+
+```{r}
+tidy(ridge_fit)
+```
+
+Let us, instead, see what the estimates would be if the penalty was $11498$, in contrast.
+
+```{r}
+tidy(ridge_fit, penalty = 11498)
+```
+
+Here's a penalty of $705$:
+
+```{r}
+tidy(ridge_fit, penalty = 705)
+```
+
+And $50$:
+
+```{r}
+tidy(ridge_fit, penalty = 50)
+```
+
+#### Activities
+
+-   Compare and contrast the estimates for these two very different penalty values. What do you notice?
+
+We can visualize how the magnitude of the coefficients are being regularized towards zero as the penalty goes up:
+
+```{r}
+ridge_fit %>%
+  extract_fit_engine() %>%
+  plot(xvar = "lambda")
+```
+
+Prediction is done as normal; if we use `predict()` by itself, then `penalty = 0`, as we set in the model specification, is used.
+
+```{r}
+predict(ridge_fit, new_data = Hitters_train)
+```
+
+But we can also get predictions for other values of `penalty` by specifying it in `predict()`:
+
+```{r}
+predict(ridge_fit, new_data = Hitters_train, penalty = 500)
+```
+
+#### Activities
+
+-   What do you notice about the predicted values for these observations as the value of `penalty` changes?
+
+We saw how we can fit a ridge model and make predictions for different values of `penalty`, but it would be nice if we could find the "best" value of `penalty`. This is something we can use hyperparameter tuning for.
+
+### Hyperparameter Tuning
+
+Hyperparameter tuning is, in its simplest form, a way of fitting many models with different sets of hyperparameters trying to find one that performs "best." The complexity in hyperparameter tuning can come from the number of different models tried. We will keep it simple for this lab and only look at grid search, only looking at evenly spaced parameter values. This is a fine enough approach if you have one or two tunable parameters, but can become computationally infeasible. See the chapter on ['iterative search'](https://www.tmwr.org/iterative-search.html) from ['Tidy Modeling with R'](https://www.tmwr.org/) for more information.
+
+We can use the `tune_grid()` function to perform hyperparameter tuning using a grid search. `tune_grid()` needs 3 different things;
+
+a `workflow` object containing the model and preprocessor, a `rset` object containing the resamples the workflow should be fitted within, and a tibble containing the parameter values to be evaluated.
+
+Optionally, a metric set of performance metrics can be supplied for evaluation. If you don't set one, then a default set of performance metrics is used.
+
+We already have a `resample` object created in `Hitters_fold`. Now we should create the workflow specification.
+
+We just used the training set as is when we fit the model earlier. But ridge regression is scale sensitive, so we need to make sure that the variables are on the same scale. We can use `step_normalize()`. Secondly, let us deal with the factor variables, using `step_novel()` and `step_dummy()`.
+
+```{r}
+ridge_recipe <- 
+  recipe(formula = Salary ~ ., data = Hitters_train) %>% 
+  step_novel(all_nominal_predictors()) %>% 
+  step_dummy(all_nominal_predictors()) %>% 
+  step_zv(all_predictors()) %>% 
+  step_normalize(all_predictors())
+```
+
+The model specification will look very similar to what we have seen earlier, but we will set `penalty = tune()`. This tells `tune_grid()` that the `penalty` parameter should be tuned.
+
+```{r}
+ridge_spec <- 
+  linear_reg(penalty = tune(), mixture = 0) %>% 
+  set_mode("regression") %>% 
+  set_engine("glmnet")
+```
+
+Now we combine to create a `workflow` object.
+
+```{r}
+ridge_workflow <- workflow() %>% 
+  add_recipe(ridge_recipe) %>% 
+  add_model(ridge_spec)
+```
+
+The last thing we need is the values of `penalty` we are trying. This can be created using `grid_regular()`, which creates a grid of evenly spaced parameter values. We use the `penalty()` function from the `dials` package to denote the parameter and set the range of the grid we are searching for. Note that this range is log-scaled.
+
+```{r}
+penalty_grid <- grid_regular(penalty(range = c(-5, 5)), levels = 50)
+penalty_grid
+```
+
+#### Activities
+
+-   What does `step_novel()` do? Why might it be useful?
+-   How does `penalty_grid` change if you set `levels = 100`? `levels = 10`?
+-   Investigate the other `grid` functions in `tidymodels`. Try one of them out here. What do you notice?
+
+Using 50 levels for one parameter might seem overkill, and in many applications it is. But remember that `glmnet` fits all the models in one go, so adding more levels to `penalty` doesn't affect the computational speed much for linear or logistic regression.
+
+Now we have everything we need and we can fit all the models.
+
+```{r}
+tune_res <- tune_grid(
+  ridge_workflow,
+  resamples = Hitters_fold, 
+  grid = penalty_grid
+)
+
+tune_res
+```
+
+The output of `tune_grid()` can be hard to read by itself, unprocessed. `autoplot()` creates a great visualization:
+
+```{r}
+autoplot(tune_res)
+```
+
+Here we see that the amount of regularization affects the performance metrics differently. Note how there are areas where the amount of regularization doesn't have any meaningful influence on the coefficient estimates. We can also see the raw metrics that created this chart by calling `collect_metrics()`.
+
+```{r}
+collect_metrics(tune_res)
+```
+
+The "best" values of this can be selected using `select_best()`; this function requires you to specify a matric that it should use to select.
+
+```{r}
+best_penalty <- select_best(tune_res, metric = "rsq")
+best_penalty
+```
+
+This value of penalty can then be used with `finalize_workflow()` to update/finalize the recipe by replacing `tune()` with the value of `best_penalty`. Now, this **best** model should be fit again, this time using the **whole training data set**.
+
+```{r}
+ridge_final <- finalize_workflow(ridge_workflow, best_penalty)
+
+ridge_final_fit <- fit(ridge_final, data = Hitters_train)
+```
+
+This final model can now be applied on our testing data set to validate its performance:
+
+```{r}
+augment(ridge_final_fit, new_data = Hitters_test) %>%
+  rsq(truth = Salary, estimate = .pred)
+```
+
+#### Activities
+
+-   Evaluate the performance of this model. Look at the parameter estimates for the training data. What does this tell you about the parameters?
+
+## Lasso Regression
+
+We will use the `glmnet` package to perform lasso linear regression. `parsnip` does not have a dedicated function to create a ridge regression model specification. For a linear lasso regression, you need to use `linear_reg()` and set `mixture = 1` to specify a lasso model.
+
+The following procedure will be very similar to what we saw in the ridge regression section. The preprocessing needed is the same, but let us write it out one more time.
+
+```{r}
+lasso_recipe <- 
+  recipe(formula = Salary ~ ., data = Hitters_train) %>% 
+  step_novel(all_nominal_predictors()) %>% 
+  step_dummy(all_nominal_predictors()) %>% 
+  step_zv(all_predictors()) %>% 
+  step_normalize(all_predictors())
+
+lasso_spec <- 
+  linear_reg(penalty = tune(), mixture = 1) %>% 
+  set_mode("regression") %>% 
+  set_engine("glmnet") 
+
+lasso_workflow <- workflow() %>% 
+  add_recipe(lasso_recipe) %>% 
+  add_model(lasso_spec)
+```
+
+While we are doing a different kind of regularization, we still use the same `penalty` argument. We've picked a different range for the values of `penalty`, since we know it will be a good range. You would, in practice, have to search a wide range of values at first, then narrow in on a range of interest.
+
+```{r}
+penalty_grid <- grid_regular(penalty(range = c(-2, 2)), levels = 50)
+```
+
+And we can use `tune_grid()` again.
+
+```{r}
+tune_res <- tune_grid(
+  lasso_workflow,
+  resamples = Hitters_fold, 
+  grid = penalty_grid
+)
+
+autoplot(tune_res)
+```
+
+We select the best value of penalty using `select_best()`:
+
+```{r}
+best_penalty <- select_best(tune_res, metric = "rsq")
+```
+
+And refit the using the whole training data set:
+
+```{r}
+lasso_final <- finalize_workflow(lasso_workflow, best_penalty)
+
+lasso_final_fit <- fit(lasso_final, data = Hitters_train)
+```
+
+And finally, predict on the testing set:
+
+```{r}
+augment(ridge_final_fit, new_data = Hitters_test) %>%
+  rsq(truth = Salary, estimate = .pred)
+```
+
+#### Activities
+
+-   Which model, ridge or lasso, performed best on the testing data?
+
+-   Instead of using `select_best()`, try selecting by one standard error, and refit to the training and testing sets. Does anything change?
+
+## Resources
+
+The free book [Tidy Modeling with R](https://www.tmwr.org/) is strongly recommended.
+
+## Source
+
+Several parts of this lab come directly from the ["ISLR Tidymodels Labs"](https://emilhvitfeldt.github.io/ISLR-tidymodels-labs/index.htmll). Credit to Emil Hvitfeldt for writing and maintaining the open-source book.
