@@ -1,0 +1,258 @@
+---
+title: "Lab 6: Beyond Linearity"
+author: "PSTAT 131/231"
+output:
+    html_document:
+      toc: true
+      toc_float: true
+      code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE,
+                      warning = FALSE)
+```
+
+## Introduction
+
+This lab will look at the various ways we can introduce non-linearity into our model by doing preprocessing. Methods include polynomials expansion, step functions, and splines.
+
+This chapter will use ['parsnip'](https://www.tidymodels.org/start/models/) for model fitting and ['recipes and workflows'](https://www.tidymodels.org/start/recipes/) to perform the transformations.
+
+We will be using the `Wage` data set from the `ISLR` package.
+
+### Loading Packages
+
+We load `tidymodels` for modeling functions, `ISLR` for data sets, and the `tidyverse`. We also will use the `glmnet` package to perform ridge regression.
+
+```{r}
+library(tidymodels)
+library(ISLR)
+library(ISLR2)
+library(tidyverse)
+library(glmnet)
+library(modeldata)
+library(ggthemes)
+library(janitor) # for naming conventions
+library(naniar) # to assess missing data patterns
+library(corrplot) # for a correlation plot
+library(themis) # for upsampling
+tidymodels_prefer()
+```
+
+### Data
+
+We'll be working with the `Wage` data set for this lab. It consists of wage information and some data on a number of other variables for a sample size of approximately 3,000 male workers in the mid-Atlantic region.
+
+```{r}
+wage <- as_tibble(Wage) %>% 
+  clean_names()
+```
+
+#### Activities
+
+-   Access the help page for `Wage`. Familiarize yourself with the predictor variables that are included.
+-   Do you think the variable `region` will be useful in this data set? Why or why not? (Looking at the distribution of the variable might help in answering this question.)
+
+## The Initial Split
+
+We can start, as normal, by splitting the data into training and testing sets, using stratified sampling.
+
+```{r}
+set.seed(3435)
+wage_split <- initial_split(wage, strata = "wage")
+
+wage_train <- training(wage_split)
+wage_test <- testing(wage_split)
+
+wage_folds <- vfold_cv(wage_train, v = 5, strata = "wage")
+```
+
+## Polynomial Regression and Step Functions
+
+Polynomial regression can be thought of as doing polynomial expansion on a variable and passing that expansion into a linear regression model. `step_poly()` allows us to do a polynomial expansion on one or more variables.
+
+First, we will do something a little different, just to illustrate how a specific polynomial regression can be fit and what the results look like. Then, later on, we'll go over how to tune a polynomial to find the optimal degree.
+
+### Example
+
+The following step will take `age` and replace it with the variables `age`, `age^2`, `age^3`, and `age^4` (since we set `degree = 4`). In other words, it's fitting a fourth-degree polynomial:
+
+```{r}
+rec_poly <- recipe(wage ~ age, data = wage_train) %>%
+  step_poly(age, degree = tune())
+```
+
+This recipe is combined with a linear regression specification (since we're dealing with a continuous outcome, which is workers' raw wage) and then used to create a workflow object. We also set up a grid of degree values to try out, using `grid_regular()`:
+
+```{r}
+lm_spec <- linear_reg() %>%
+  set_mode("regression") %>%
+  set_engine("lm")
+
+poly_wf <- workflow() %>%
+  add_model(lm_spec) %>%
+  add_recipe(rec_poly)
+
+degree_grid <- grid_regular(degree(range = c(1, 10)), 
+                            levels = 10)
+```
+
+We can use `tune_grid()` to fit these models to the folds:
+
+```{r}
+poly_tune <- tune_grid(poly_wf, resamples = wage_folds, 
+                       grid = degree_grid)
+autoplot(poly_tune)
+```
+
+One thing you may notice right away from the `autoplot()` results is that none of these models does very well when it comes to predicting `wage`. RMSE and $R^2$ both see their biggest gains in terms of performance as we go from a degree one to a degree two polynomial, and although there are some small fluctuations beyond that, degree two might be optimal here in terms of parsimony. In addition, the $R^2$ value never goes beyond 0.10 (if that), meaning that age alone explains less than 10% of variation in employee wage.
+
+What have we essentially fit here? We've fit:
+
+$$
+Wage=\beta_0+f(Age)
+$$
+
+where
+
+$$
+f(Age)=\beta_1Age+...\beta_dAge^d
+$$
+
+for values of $d = 1,…,10$ (and we've fit each of these 10 models once per fold, for a total of 50 polynomial regressions).
+
+Suppose we want to
+
+We can also think of this problem as a classification problem, and we will do that just now by setting us the task of predicting whether an individual earns more than \$250000 per year. We will add a new factor value denoting this response.
+
+```{r}
+Wage <- Wage %>%
+  mutate(high = factor(wage > 250, 
+                       levels = c(TRUE, FALSE), 
+                       labels = c("High", "Low")))
+```
+
+We cannot use the polynomial expansion recipe `rec_poly` we created earlier since it had `wage` as the response and now we want to have `high` as the response. We also have to create a logistic regression specification that we will use as our classification model.
+
+```{r}
+rec_poly <- recipe(high ~ age, data = Wage) %>%
+  step_poly(age, degree = 4)
+
+lr_spec <- logistic_reg() %>%
+  set_engine("glm") %>%
+  set_mode("classification")
+
+lr_poly_wf <- workflow() %>%
+  add_model(lr_spec) %>%
+  add_recipe(rec_poly)
+```
+
+This polynomial logistic regression model workflow can now be fit and predicted with, as usual.
+
+```{r}
+lr_poly_fit <- fit(lr_poly_wf, data = Wage)
+
+predict(lr_poly_fit, new_data = Wage)
+```
+
+If we want we can also get back the underlying probability predictions for the two classes, and their confidence intervals for these probability predictions by setting `type = "prob"` and `type = "conf_int"`.
+
+```{r}
+predict(lr_poly_fit, new_data = Wage, type = "prob")
+
+predict(lr_poly_fit, new_data = Wage, type = "conf_int")
+```
+
+We can use these to visualize the probability curve for the classification model.
+
+```{r}
+regression_lines <- bind_cols(
+  augment(lr_poly_fit, new_data = age_range, type = "prob"),
+  predict(lr_poly_fit, new_data = age_range, type = "conf_int")
+)
+
+regression_lines %>%
+  ggplot(aes(age)) +
+  ylim(c(0, 0.2)) +
+  geom_line(aes(y = .pred_High), color = "darkgreen") +
+  geom_line(aes(y = .pred_lower_High), color = "blue", linetype = "dashed") +
+  geom_line(aes(y = .pred_upper_High), color = "blue", linetype = "dashed") +
+  geom_jitter(aes(y = (high == "High") / 5), data = Wage, 
+              shape = "|", height = 0, width = 0.2)
+```
+
+Next, let us take a look at the step function and how to fit a model using it as a preprocessor. You can create step functions in a couple of different ways. `step_discretize()` will convert a numeric variable into a factor variable with n bins, n here is specified with `num_breaks`. These will have approximately the same number of points in them according to the training data set.
+
+```{r}
+rec_discretize <- recipe(high ~ age, data = Wage) %>%
+  step_discretize(age, num_breaks = 4)
+
+discretize_wf <- workflow() %>%
+  add_model(lr_spec) %>%
+  add_recipe(rec_discretize)
+
+discretize_fit <- fit(discretize_wf, data = Wage)
+discretize_fit
+```
+
+If you already know where you want the step function to break then you can use `step_cut()` and supply the breaks manually.
+
+```{r}
+rec_cut <- recipe(high ~ age, data = Wage) %>%
+  step_cut(age, breaks = c(30, 50, 70))
+
+cut_wf <- workflow() %>%
+  add_model(lr_spec) %>%
+  add_recipe(rec_cut)
+
+cut_fit <- fit(cut_wf, data = Wage)
+cut_fit
+```
+
+## Splines
+
+In order to fit regression splines, or in other words, use splines as preprocessors when fitting a linear model, we use `step_bs()` to construct the matrices of basis functions. The `bs()` function is used and arguments such as knots can be passed to `bs()` by using passing a named list to options.
+
+```{r}
+rec_spline <- recipe(wage ~ age, data = Wage) %>%
+  step_bs(age, options = list(knots = 25, 40, 60))
+```
+
+We already have the linear regression specification `lm_spec` so we can create the workflow, fit the model and predict with it like we have seen how to do in the previous chapters.
+
+```{r}
+spline_wf <- workflow() %>%
+  add_model(lm_spec) %>%
+  add_recipe(rec_spline)
+
+spline_fit <- fit(spline_wf, data = Wage)
+
+predict(spline_fit, new_data = Wage)
+```
+
+Lastly, we can plot the basic spline on top of the data.
+
+```{r}
+regression_lines <- bind_cols(
+  augment(spline_fit, new_data = age_range),
+  predict(spline_fit, new_data = age_range, type = "conf_int")
+)
+
+Wage %>%
+  ggplot(aes(age, wage)) +
+  geom_point(alpha = 0.2) +
+  geom_line(aes(y = .pred), data = regression_lines, color = "blue") +
+  geom_line(aes(y = .pred_lower), data = regression_lines, 
+            linetype = "dashed", color = "blue") +
+  geom_line(aes(y = .pred_upper), data = regression_lines, 
+            linetype = "dashed", color = "blue")
+```
+
+## Resources
+
+The free book [Tidy Modeling with R](https://www.tmwr.org/) is strongly recommended.
+
+## Source
+
+Several parts of this lab come directly from the ["ISLR Tidymodels Labs"](https://emilhvitfeldt.github.io/ISLR-tidymodels-labs/index.htmll). Credit to Emil Hvitfeldt for writing and maintaining the open-source book.
