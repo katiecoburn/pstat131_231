@@ -2118,32 +2118,21 @@ the one that involves fitting the most models, first to the MLB data and
 then to the data on customer churn.</p>
 <pre class="r"><code>tune_res_hitters &lt;- tune_grid(
   en_workflow_hitters,
-  resamples = hitters_fold, 
-  grid = en_grid
+  resamples = hitters_fold,
+  grid = en_grid,
+  control = control_grid(verbose = TRUE)
 )
 
 tune_res_churn &lt;- tune_grid(
   en_workflow_churn,
-  resamples = mlc_fold, 
-  grid = en_grid
+  resamples = mlc_fold,
+  grid = en_grid,
+  control = control_grid(verbose = TRUE)
 )
 
 tune_res_hitters</code></pre>
-<pre><code>## # Tuning results
-## # 10-fold cross-validation 
-## # A tibble: 10 × 4
-##    splits           id     .metrics           .notes          
-##    &lt;list&gt;           &lt;chr&gt;  &lt;list&gt;             &lt;list&gt;          
-##  1 &lt;split [216/24]&gt; Fold01 &lt;tibble [200 × 6]&gt; &lt;tibble [0 × 3]&gt;
-##  2 &lt;split [216/24]&gt; Fold02 &lt;tibble [200 × 6]&gt; &lt;tibble [0 × 3]&gt;
-##  3 &lt;split [216/24]&gt; Fold03 &lt;tibble [200 × 6]&gt; &lt;tibble [0 × 3]&gt;
-##  4 &lt;split [216/24]&gt; Fold04 &lt;tibble [200 × 6]&gt; &lt;tibble [0 × 3]&gt;
-##  5 &lt;split [216/24]&gt; Fold05 &lt;tibble [200 × 6]&gt; &lt;tibble [0 × 3]&gt;
-##  6 &lt;split [216/24]&gt; Fold06 &lt;tibble [200 × 6]&gt; &lt;tibble [0 × 3]&gt;
-##  7 &lt;split [216/24]&gt; Fold07 &lt;tibble [200 × 6]&gt; &lt;tibble [0 × 3]&gt;
-##  8 &lt;split [216/24]&gt; Fold08 &lt;tibble [200 × 6]&gt; &lt;tibble [0 × 3]&gt;
-##  9 &lt;split [216/24]&gt; Fold09 &lt;tibble [200 × 6]&gt; &lt;tibble [0 × 3]&gt;
-## 10 &lt;split [216/24]&gt; Fold10 &lt;tibble [200 × 6]&gt; &lt;tibble [0 × 3]&gt;</code></pre>
+<pre class="r"><code>tune_res_churn &lt;- read_rds(file = &quot;churn-en-results.rds&quot;)
+tune_res_hitters &lt;- read_rds(file = &quot;hitters-en-results.rds&quot;)</code></pre>
 <p>The output of <code>tune_grid()</code> can be hard to read by itself,
 unprocessed (although it’s shown above for the MLB data). It is what’s
 known as a “nested tibble” and contains four columns, each with 10

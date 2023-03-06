@@ -21,7 +21,7 @@ The [Pokémon](https://www.pokemon.com/us/) franchise encompasses video games, T
 
 Each Pokémon has a [primary type](https://bulbapedia.bulbagarden.net/wiki/Type) (some even have secondary types). Based on their type, a Pokémon is strong against some types, and vulnerable to others. (Think rock, paper, scissors.) A Fire-type Pokémon, for example, is vulnerable to Water-type Pokémon, but strong against Grass-type.
 
-![Fig 1. Vulpix, a Fire-type fox Pokémon from Generation 1 (also my favorite Pokémon!) ](images/vulpix.png){width="196"}
+![Fig 1. Vulpix, a Fire-type fox Pokémon from Generation 1 (also my favorite Pokémon!)](images/vulpix.png){width="196"}
 
 The goal of this assignment is to build a statistical learning model that can predict the **primary type** of a Pokémon based on its generation, legendary status, and six battle statistics. *This is an example of a **classification problem**, but these models can also be used for **regression problems***.
 
@@ -39,7 +39,7 @@ How many classes of the outcome are there? Are there any Pokémon types with ver
 
 For this assignment, we'll handle the rarer classes by grouping them, or "lumping them," together into an 'other' category. [Using the `forcats` package](https://forcats.tidyverse.org/), determine how to do this, and **lump all the other levels together except for the top 6 most frequent** (which are Bug, Fire, Grass, Normal, Water, and Psychic).
 
-Convert `type_1` and `legendary` to factors.
+Convert `type_1`, `legendary`, and `generation` to factors.
 
 ### Exercise 3
 

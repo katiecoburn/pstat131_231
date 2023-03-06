@@ -347,20 +347,27 @@ en_grid <- grid_regular(penalty(range = c(0, 1),
 
 Now we have everything we need and we can fit all the models. The following code chunk is the one that will take the **longest** to run in this entire document, because it is the one that involves fitting the most models, first to the MLB data and then to the data on customer churn.
 
-```{r}
+```{r, eval=FALSE}
 tune_res_hitters <- tune_grid(
   en_workflow_hitters,
-  resamples = hitters_fold, 
-  grid = en_grid
+  resamples = hitters_fold,
+  grid = en_grid,
+  control = control_grid(verbose = TRUE)
 )
 
 tune_res_churn <- tune_grid(
   en_workflow_churn,
-  resamples = mlc_fold, 
-  grid = en_grid
+  resamples = mlc_fold,
+  grid = en_grid,
+  control = control_grid(verbose = TRUE)
 )
 
 tune_res_hitters
+```
+
+```{r}
+tune_res_churn <- read_rds(file = "churn-en-results.rds")
+tune_res_hitters <- read_rds(file = "hitters-en-results.rds")
 ```
 
 The output of `tune_grid()` can be hard to read by itself, unprocessed (although it's shown above for the MLB data). It is what's known as a "nested tibble" and contains four columns, each with 10 rows.
