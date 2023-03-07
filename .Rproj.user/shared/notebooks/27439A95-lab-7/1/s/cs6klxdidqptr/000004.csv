@@ -1,9 +1,0 @@
-"0","boost_fit <- fit(boost_spec, sale_price ~ ., data = ames_train)
-"
-"1","[1m[33mError[39m in [38;5;232m`check_installs()`[39m:[22m
-[33m![39m This engine requires some package installs: 'xgboost'
-Backtrace:
-[90m 1. [39m[1mgenerics[22m::fit(boost_spec, sale_price ~ ., data = ames_train)
-[90m 2. [39m[1mparsnip[22m::fit.model_spec(boost_spec, sale_price ~ ., data = ames_train)
-[90m 3. [39mparsnip:::check_installs(object)
-"

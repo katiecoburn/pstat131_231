@@ -1,5 +1,0 @@
-"0","set.seed(3435)"
-"0","Wage_split <- initial_split(Wage, strata = ""wage"")"
-"0",""
-"0","Wage_train <- training(Wage_split)"
-"0","Wage_test <- testing(Wage_split)"

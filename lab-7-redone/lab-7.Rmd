@@ -15,378 +15,434 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE,
 
 ## Introduction
 
-This lab will take a look at different tree-based models. In doing so, we will explore how changing hyperparameters can help improve performance. This chapter will use [parsnip](https://www.tidymodels.org/start/models/) for model fitting and [recipes and workflows](https://www.tidymodels.org/start/recipes/) to perform the transformations, and [tune and dials](https://www.tidymodels.org/start/tuning/) to tune the hyperparameters of the model. `rpart.plot` is used to visualize the decision trees, using the `rpart` package as an engine, and `vip` is used to visualize variable importance.
+In this lab, we will be demonstrating how to tune and fit random forest models and gradient-boosted tree models (or "boosted trees"). We'll demonstrate each of these using two different data sets -- a regression data set (the `Wage` data from Lab 6) and a classification data set with multiple levels of the outcome (the `palmerpenguins` data, [see here](https://allisonhorst.github.io/palmerpenguins/)).
 
 ### Loading Packages
 
 ```{r}
-library(tidyverse)
 library(tidymodels)
 library(ISLR)
-library(rpart.plot)
-library(vip)
+library(ISLR2)
+library(tidyverse)
+library(glmnet)
+library(modeldata)
+library(ggthemes)
 library(janitor)
-library(randomForest)
+library(naniar)
 library(xgboost)
+library(ranger)
+library(vip)
+library(corrplot)
+library(palmerpenguins) # for the penguins data
+tidymodels_prefer()
 ```
 
-### Data
+### Wage Data
 
-We will build a regression model using the `ames` data to predict the sale price, `sale_price`, as the response with the remaining variables as predictors.
+The `Wage` data was described fairly thoroughly in Lab 6 -- it consists of wage information and some information on several other descriptive variables for about 3,000 males in the mid-Atlantic region of the US. It's loaded by default when we load the `ISLR` or `ISLR2` package(s), so we just convert it to a tibble and use `clean_names()` to apply the snake case naming convention to the column names.
 
 ```{r}
-data(ames, package = "modeldata")
-
-ames <- as_tibble(ames) %>% 
+wage <- as_tibble(Wage) %>% 
   clean_names()
 ```
 
-We will also use the `Carseats` data set from the `ISLR` package to demonstrate a classification model. We create a new variable `High` to denote if `Sales <= 8`, then the `Sales` predictor is removed as it is a perfect predictor of `High`.
-
-```{r}
-Carseats <- as_tibble(Carseats) %>%
-  mutate(High = factor(if_else(Sales <= 8, "No", "Yes"))) %>%
-  select(-Sales)
-```
-
-#### Activities
-
-- Access the help page for `ames`. Familiarize yourself with the subject of the data set and the predictor variables.
-
-## The Initial Split
-
-We can start, as normal, by splitting the data sets into training and testing sets, using stratified sampling.
+You can revisit some of the EDA we did with this data in Lab 6. Here, we'll simply proceed to performing an initial split of the data into training and testing sets, then apply 5-fold cross-validation to the training set. Note that we make sure to use `strata = "wage"` for both of these functions, stratifying on the outcome variable.
 
 ```{r}
 set.seed(3435)
-ames_split <- initial_split(ames, strata = "sale_price")
+wage_split <- initial_split(wage, strata = "wage")
 
-ames_train <- training(ames_split)
-ames_test <- testing(ames_split)
+wage_train <- training(wage_split)
+wage_test <- testing(wage_split)
 
-Carseats_split <- initial_split(Carseats, strata = "High")
-
-Carseats_train <- training(Carseats_split)
-Carseats_test <- testing(Carseats_split)
+wage_folds <- vfold_cv(wage_train, v = 5, strata = "wage")
 ```
 
-## Fitting Classification Trees
+### Penguin Data
 
-We will both be fitting a classification and regression tree in this section, so we can save a little bit of typing by creating a general decision tree specification using `rpart` as the engine.
+![Artwork by \@allison_horst](https://allisonhorst.github.io/palmerpenguins/reference/figures/lter_penguins.png){width="472"}
+
+One of the classic commonly-used data sets for multiclass classification problems is `iris`. However, for several good reasons, there has been discussion in the data science community about whether continued use of `iris` is desirable or ethical. (For those interested, I recommend this blog post: [*It's time to retire the `iris` data set.*](https://armchairecology.blog/iris-dataset/))
+
+The `palmerpenguins` data set was introduced as an alternative to `iris` by Allison Horst (who wrote [the R package](https://allisonhorst.github.io/palmerpenguins/)). It is very similar in structure, in that it contains observations on 344 penguins from three different species (as visualized above) -- the Chinstrap, Gentoo, and Adelie penguins -- who live on three islands in the Palmer Archipelago, Antarctica. The data set contains information about the penguins' bill length and depth in millimeters, their flipper length in millimeters, their body mass in grams, and their sex (male or female).
+
+We will work with the `palmerpenguins` data set. We read it in here:
 
 ```{r}
-tree_spec <- decision_tree() %>%
-  set_engine("rpart")
+penguins <- as_tibble(palmerpenguins::penguins)
 ```
 
-Then this decision tree specification can be used to create a classification decision tree engine. This is a good example of how the flexible composition system created by `parsnip` can be used to create multiple model specifications.
+We can visualize any missingness:
 
 ```{r}
-class_tree_spec <- tree_spec %>%
+vis_miss(penguins)
+```
+
+Here, it will probably just be easier to handle missingness by dropping the observations that have any values missing:
+
+```{r}
+penguins <- penguins %>% 
+  drop_na()
+```
+
+In doing so, we only lose about 11 observations. That's because about $3.2\%$ of `sex` observations are missing, and $0.032(344) \approx 11$. It looks like one or two other penguins are missing some other values, but those are **also** missing their value for `sex`, so there are only 11 observations dropped total.
+
+And we'll do an initial split and 5-fold cross-validation, again stratifying on the outcome variable, which here is the species of penguin (or `species`):
+
+```{r}
+set.seed(3435)
+penguin_split <- initial_split(penguins, strata = "species")
+
+penguin_train <- training(penguin_split)
+penguin_test <- testing(penguin_split)
+
+penguin_folds <- vfold_cv(penguin_train, v = 5, strata = "species")
+```
+
+Let's do a little EDA. First of all, how does the outcome variable look -- is it balanced (equal counts per class)?
+
+This code also demonstrates how to make a custom color palette by specifying color hex codes and how to use that palette manually in a `ggplot`.
+
+```{r, collapse=TRUE}
+custom_pal <- c("#fb7504", "#c65ccc", "#047374")
+penguin_train %>% 
+  ggplot(aes(x = forcats::fct_infreq(species), fill = species,
+             y = (..count..)/sum(..count..))) + 
+  geom_bar() +
+  scale_fill_manual(values = custom_pal)+
+  xlab("Species") +
+  ylab("Proportion of Training Set") +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+
+Chinstrap penguins are the least common, at only about $20\%$ of the total, but even so, this doesn't appear to be a **huge** imbalance, and we can likely get away without needing to upsample or downsample (although we could certainly try it if we chose).
+
+```{r}
+penguin_train %>% 
+  ggplot(aes(x = island, fill = species)) +
+  geom_bar(position = "dodge") +
+  scale_fill_manual(values = custom_pal) +
+  xlab("Island") +
+  ylab("Count") +
+  theme_minimal()
+```
+
+We definitely also might want to include the specific archipelago island as a predictor of penguin species, as shown by the above plot. Although Adelie penguins are found in approximately equal amounts on all three islands, Gentoo penguins were only found on Biscoe and Chinstrap penguins only on Dream.
+
+We can also try visualizing the relationship between flipper length and body mass by species, as shown:
+
+```{r}
+penguin_train %>% 
+  ggplot(aes(x = flipper_length_mm, y = body_mass_g, 
+             color = species)) +
+  geom_point() +
+  scale_color_manual(values = custom_pal) +
+  theme_minimal() +
+  xlab("Flipper Length (mm)") +
+  ylab("Body Mass (g)") + 
+  labs(color = "Species")
+```
+
+### Activities
+
+-   Describe the relationship(s) between body mass, flipper length, and species in the above picture. Do these predictors seem like they can help differentiate between species?
+
+-   Make a correlation plot of the numeric variables in `penguins`. What relationships do you see?
+
+## Random Forest Models
+
+For the `wage` data, we set up the same recipe as we did for a single pruned decision tree in Lab 6 -- that is, using all predictors, but removing `region` (which is a constant) and `logwage` (which is a direct linear function of `wage` and therefore would make no sense to include). We dummy-code any nominal predictors and normalize all predictors:
+
+```{r}
+rec_wage <- recipe(wage ~ ., data = wage_train) %>%
+  step_rm(region, logwage) %>% 
+  step_dummy(all_nominal_predictors()) %>% 
+  step_normalize(all_predictors())
+```
+
+For the `penguin` data, we remove `year`, which just represents the year in which the study was conducted/the penguins were recorded and likely doesn't convey much information, and then do the same steps:
+
+```{r}
+rec_penguin <- recipe(species ~ ., data = penguin_train) %>% 
+  step_rm(year) %>% 
+  step_dummy(all_nominal_predictors()) %>% 
+  step_normalize(all_predictors())
+```
+
+We then set up two separate random forest workflows, one for regression (`rf_reg_wf`) and one for classification (`rf_class_wf`), or one for the `wage` data and one for the `penguins` data, respectively. The default engine for random forest models in `tidymodels` is the `ranger` package. We flag three hyperparameters for tuning -- `mtry`, `trees`, and `min_n`.
+
+```{r}
+rf_reg_spec <- rand_forest(mtry = tune(), 
+                           trees = tune(), 
+                           min_n = tune()) %>%
+  set_engine("ranger", importance = "impurity") %>% 
+  set_mode("regression")
+
+rf_reg_wf <- workflow() %>% 
+  add_model(rf_reg_spec) %>% 
+  add_recipe(rec_wage)
+
+rf_class_spec <- rand_forest(mtry = tune(), 
+                           trees = tune(), 
+                           min_n = tune()) %>%
+  set_engine("ranger") %>% 
   set_mode("classification")
+
+rf_class_wf <- workflow() %>% 
+  add_model(rf_class_spec) %>% 
+  add_recipe(rec_penguin)
 ```
 
-With both a model specification and our data, we are ready to fit the model.
+We set up a grid of hyperparameter values to consider. Here we allow `mtry` to range from 1 to 6, `trees` from 200 to 600, and `min_n` from 10 to 20, and we specify five levels of each:
 
 ```{r}
-class_tree_fit <- class_tree_spec %>%
-  fit(High ~ ., data = Carseats_train)
+rf_grid <- grid_regular(mtry(range = c(1, 6)), 
+                        trees(range = c(200, 600)),
+                        min_n(range = c(10, 20)),
+                        levels = 5)
+rf_grid
 ```
 
-The `rpart.plot` package provides functions to let us easily visualize the decision tree. As the name implies, it only works with `rpart` trees.
+In this code chunk, we actually fit all the random forest models we've specified to each data set. Notice that we have set `eval=FALSE` for this code chunk and the following one; running the models takes a few minutes and is something we want to do as few times as possible, so we save the results to files and load them back in later.
 
-```{r}
-class_tree_fit %>%
-  extract_fit_engine() %>%
-  rpart.plot()
-```
-
-#### Activities
-
-- From the visualization, what is the most important predictor of shelving location? How do you know?
-
-We can check the training set accuracy of this model:
-
-```{r}
-augment(class_tree_fit, new_data = Carseats_train) %>%
-  accuracy(truth = High, estimate = .pred_class)
-```
-
-And look at the confusion matrix:
-
-```{r}
-augment(class_tree_fit, new_data = Carseats_train) %>%
-  conf_mat(truth = High, estimate = .pred_class)
-```
-
-Let's check the testing set:
-
-```{r}
-augment(class_tree_fit, new_data = Carseats_test) %>%
-  conf_mat(truth = High, estimate = .pred_class)
-augment(class_tree_fit, new_data = Carseats_test) %>%
-  accuracy(truth = High, estimate = .pred_class)
-```
-
-#### Activities
-
-- Compare the model's performance on the training set to its performance on the testing set.
-
-Let us try to tune the `cost_complexity` of the decision tree, or the pruning penalty, to find a more optimal complexity. We use the `class_tree_spec` object and use the `set_args()` function to specify that we want to tune `cost_complexity`. This is then passed directly into the `workflow` object to avoid creating an intermediate object.
-
-```{r}
-class_tree_wf <- workflow() %>%
-  add_model(class_tree_spec %>% set_args(cost_complexity = tune())) %>%
-  add_formula(High ~ .)
-```
-
-To be able to tune the hyperparameter, we need 2 more objects -- a `resamples` object (we will use a k-fold cross-validation data set), and a grid of values to try. Since we are only tuning one hyperparameter, a regular grid is probably simplest.
-
-```{r}
-set.seed(3435)
-Carseats_fold <- vfold_cv(Carseats_train)
-
-param_grid <- grid_regular(cost_complexity(range = c(-3, -1)), levels = 10)
-
-tune_res <- tune_grid(
-  class_tree_wf, 
-  resamples = Carseats_fold, 
-  grid = param_grid, 
-  metrics = metric_set(accuracy)
+```{r, eval=FALSE}
+tune_reg <- tune_grid(
+  rf_reg_wf, 
+  resamples = wage_folds, 
+  grid = rf_grid
+)
+tune_class <- tune_grid(
+  rf_class_wf,
+  resamples = penguin_folds,
+  grid = rf_grid
 )
 ```
 
-Using `autoplot()` shows which values of cost_complexity appear to produce the highest accuracy:
+Here we saved the results to two files:
 
-```{r}
-autoplot(tune_res)
+```{r, eval=FALSE}
+save(tune_reg, file = "tune_reg.rda")
+save(tune_class, file = "tune_class.rda")
 ```
 
-#### Activities
-
-- Interpret the plot. What do you notice?
-
-We can now select the best performing value with `select_best()`, finalize the workflow by updating the value of `cost_complexity`, and fit the model on the full training data set.
+And finally, in this code chunk, we load the model results back in and take a look at each of them:
 
 ```{r}
-best_complexity <- select_best(tune_res)
+load("tune_reg.rda")
+load("tune_class.rda")
 
-class_tree_final <- finalize_workflow(class_tree_wf, best_complexity)
-
-class_tree_final_fit <- fit(class_tree_final, data = Carseats_train)
+autoplot(tune_reg) + theme_minimal()
+autoplot(tune_class) + theme_minimal()
 ```
 
-At last we can visualize the model, and we see that the better-performing model is much less complex than the original model we fit.
+For the wage data, as we increase `mtry`, model performance seems to improve -- RMSE tends to decrease and $R^2$ tends to increase -- until we reach about mtry of 3, at which point it starts to decrease again. The number of trees, `trees`, doesn't make much of a difference overall, as those lines are virtually on top of each other (and that tends to be the case). A minimal node size, or `min_n`, of 20 (the plots on the far right) seems to produce slightly better results than a minimum size of 10 (plots on the far left).
+
+We'll select the optimal random forest model for each data set -- in terms of RMSE for the wage data and in terms of ROC AUC for the penguins data:
 
 ```{r}
-class_tree_final_fit %>%
-  extract_fit_engine() %>%
-  rpart.plot()
+show_best(tune_reg, n = 1)
+best_rf_reg <- select_best(tune_reg)
+
+show_best(tune_class, n = 1)
+best_rf_class <- select_best(tune_class)
 ```
 
-## Fitting Regression Trees
+### Activities
 
-We will now show how we fit a regression tree. This is very similar to what we saw in the last section. The main difference here is that the response we are looking at will be continuous instead of categorical. We can reuse `tree_spec` as a base for the regression decision tree specification.
+-   How many random forest models are we fitting across folds for each data set (that is, how many are we fitting for the `wage` data? How many for the `penguins` data?)
+
+-   Interpret the `autoplot()` results for the `penguins` data.
+
+-   For both these data sets, which of the three hyperparameters we tuned seems to have the biggest effect on model performance overall?
+
+## Gradient-Boosted Trees
+
+To fit boosted trees, we will use the same recipe as before, but now we will set up two separate **boosted tree** workflows, one for regression and one for classification. We'll tune `mtry` and `trees` again; we *could* also choose to tune `min_n` again, but the **learning rate** tends to have a much bigger impact on the performance of gradient-boosted models, and we don't want to increase the size of the grid too much, so we'll add `learn_rate` instead of `min_n`.
+
+The default engine for gradient-boosted trees is `xgboost`, which stands for "eXtreme Gradient Boosting."
 
 ```{r}
-reg_tree_spec <- tree_spec %>%
+bt_reg_spec <- boost_tree(mtry = tune(), 
+                           trees = tune(), 
+                           learn_rate = tune()) %>%
+  set_engine("xgboost") %>% 
   set_mode("regression")
+
+bt_reg_wf <- workflow() %>% 
+  add_model(bt_reg_spec) %>% 
+  add_recipe(rec_wage)
+
+bt_class_spec <- boost_tree(mtry = tune(), 
+                           trees = tune(), 
+                           learn_rate = tune()) %>%
+  set_engine("xgboost") %>% 
+  set_mode("classification")
+
+bt_class_wf <- workflow() %>% 
+  add_model(bt_class_spec) %>% 
+  add_recipe(rec_penguin)
 ```
 
-We can fit the model to the training data set:
+We set up a grid again, leaving the ranges of `mtry` and `trees` the same as before, but this time specifying the range for `learn_rate`. This is the default, which goes from $-10$ to $-1$ in log based ten (the default transformation; see `?learn_rate`), or from $10^{-10}=1 \times 10^{-10}$ to $10^{-1}=0.1$.
 
 ```{r}
-reg_tree_fit <- fit(reg_tree_spec, 
-                    sale_price ~ . -ms_sub_class -ms_zoning, ames_train)
+bt_grid <- grid_regular(mtry(range = c(1, 6)), 
+                        trees(range = c(200, 600)),
+                        learn_rate(range = c(-10, -1)),
+                        levels = 5)
+bt_grid
 ```
 
-```{r}
-augment(reg_tree_fit, new_data = ames_test) %>%
-  rmse(truth = sale_price, estimate = .pred)
-```
+We now tune all of **these** models for both data sets. Note that this code chunk and the following both specify `eval=FALSE`, meaning that they will not be run each time the .Rmd file is knitted -- essentially because running them takes so long. Instead, the results are saved and read back in in a subsequent code chunk.
 
-and the `rpart.plot()` function works for the regression decision tree as well:
-
-```{r}
-reg_tree_fit %>%
-  extract_fit_engine() %>%
-  rpart.plot()
-```
-
-Now let us again try to tune `cost_complexity` to find the best performing decision tree.
-
-```{r}
-reg_tree_wf <- workflow() %>%
-  add_model(reg_tree_spec %>% set_args(cost_complexity = tune())) %>%
-  add_formula(sale_price ~ .)
-
-set.seed(3435)
-ames_fold <- vfold_cv(ames_train)
-
-param_grid <- grid_regular(cost_complexity(range = c(-4, -1)), levels = 10)
-
-tune_res <- tune_grid(
-  reg_tree_wf, 
-  resamples = ames_fold, 
-  grid = param_grid
+```{r, eval=FALSE}
+tune_bt_reg <- tune_grid(
+  bt_reg_wf, 
+  resamples = wage_folds, 
+  grid = bt_grid
+)
+tune_bt_class <- tune_grid(
+  bt_class_wf,
+  resamples = penguin_folds,
+  grid = bt_grid
 )
 ```
 
-#### Activities
-
-- What are the defaults for `vfold_cv()`? In other words, how many folds were created here, etc.?
-
-We can visualize the results:
-
-```{r}
-autoplot(tune_res)
+```{r, eval=FALSE}
+save(tune_bt_reg, file = "tune_bt_reg.rda")
+save(tune_bt_class, file = "tune_bt_class.rda")
 ```
 
-#### Activities
-
-- Interpret the plots. What relationship(s) do you see between penalty (cost complexity) and performance?
-
-We select the best-performing model according to `rmse` and fit the final model on the whole training data set.
+We read the results in and take a look at the `autoplot()` for each set of models:
 
 ```{r}
-best_complexity <- select_best(tune_res, metric = "rmse")
+load("tune_bt_reg.rda")
+load("tune_bt_class.rda")
 
-reg_tree_final <- finalize_workflow(reg_tree_wf, best_complexity)
-
-reg_tree_final_fit <- fit(reg_tree_final, data = ames_train)
-```
-
-Visualizing the model reveals a much more complex tree than what we saw in the last section.
-
-```{r}
-reg_tree_final_fit %>%
-  extract_fit_engine() %>%
-  rpart.plot()
-```
-
-Let's check performance on the testing data set:
-
-```{r}
-augment(reg_tree_final_fit, new_data = ames_test) %>%
-  rmse(truth = sale_price, estimate = .pred)
-```
-
-## Bagging and Random Forests
-
-Here we apply bagging and random forests to the Ames data set. We will be using the `randomForest` package as the engine. A bagging model is the same as a random forest where mtry is equal to the number of predictors. We can specify `mtry` to be `.cols()`, which means that the number of columns in the predictor matrix is used. This is useful if you want to make the specification more general and useable to many different data sets. `.cols()` is one of many descriptors in the `parsnip` package. We also set `importance = TRUE` in `set_engine()` to tell the engine to save the information regarding variable importance. This is needed if we want to use the `vip` package later.
-
-```{r}
-bagging_spec <- rand_forest(mtry = .cols()) %>%
-  set_engine("randomForest", importance = TRUE) %>%
-  set_mode("regression")
-```
-
-We fit the model like normal:
-
-```{r}
-bagging_fit <- fit(bagging_spec, sale_price ~ ., 
-                   data = ames_train)
-```
-
-and we take a look at the testing performance:
-
-```{r}
-augment(bagging_fit, new_data = ames_test) %>%
-  rmse(truth = sale_price, estimate = .pred)
-```
-
-We can also create a quick scatterplot between the true and predicted values:
-
-```{r}
-augment(bagging_fit, new_data = ames_test) %>%
-  ggplot(aes(sale_price, .pred)) +
-  geom_abline() +
-  geom_point(alpha = 0.5)
-```
-
-#### Activities
-
-- Interpret the results. Do you notice anything interesting or unusual? Did this model perform better than the single decision tree?
-
-Next, let us take a look at the variable importance.
-
-```{r}
-vip(bagging_fit)
-```
-
-Next, let us take a look at a random forest. By default, `randomForest()` uses `p / 3` variables when building a random forest of regression trees, and `sqrt(p)` variables when building a random forest of classification trees. Here, we use `mtry = 6`.
-
-```{r}
-rf_spec <- rand_forest(mtry = 6) %>%
-  set_engine("randomForest", importance = TRUE) %>%
-  set_mode("regression")
-```
-
-and fitting the model like normal:
-
-```{r}
-rf_fit <- fit(rf_spec, sale_price ~ ., data = ames_train)
+autoplot(tune_bt_reg) + theme_minimal()
 ```
 
 ```{r}
-augment(rf_fit, new_data = ames_train) %>%
-  rmse(truth = sale_price, estimate = .pred)
+autoplot(tune_bt_class) + theme_minimal()
 ```
 
-#### Activities
-
-- Out of the three models so far -- decision tree, boosted tree, and random forest -- which performed best on the testing set?
-
-We can likewise plot the true values against the predicted values:
+Then, just as before, we'll select the optimal boosted tree model for each data set in terms of RMSE and ROC AUC, respectively:
 
 ```{r}
-augment(rf_fit, new_data = ames_test) %>%
-  ggplot(aes(sale_price, .pred)) +
-  geom_abline() +
-  geom_point(alpha = 0.5)
+show_best(tune_bt_reg, n = 1)
+best_bt_reg <- select_best(tune_bt_reg)
+
+show_best(tune_bt_class, n = 1)
+best_bt_class <- select_best(tune_bt_class)
 ```
 
-No discernible difference between this chart and the one we created for the bagging model.
+### Activities
 
-And we can look at the variable importance plot:
+-   Practice interpreting the results for each of these sets of models.
 
-```{r}
-vip(rf_fit)
-```
+## Model Selection
 
-We would normally want to perform hyperparameter tuning for the random forest model, so:
+Let's make a table to present the RMSE and ROC AUC values of our best-fitting models (across folds) for each of these two data sets:
 
-#### Activities
+|          | Random Forest | Boosted Tree |
+|----------|---------------|--------------|
+| **RMSE** | 33.74469      | 34.07487     |
 
-- Use cross-validation to tune `mtry` for the random forest model on the Ames data set.
+|             | Random Forest | Boosted Tree |
+|-------------|---------------|--------------|
+| **ROC AUC** | 0.9998485     | 1            |
 
-## Boosting
+We'll go with the best random forest model for the wage data and the best boosted tree model for the penguin data. Here, we fit each of those to the entire training set(s) respectively.
 
-We will now fit a boosted tree model. The `xgboost` package gives a good implementation of boosted trees. It has many parameters to tune and we know that setting `trees` too high can lead to overfitting. Nevertheless, let us try fitting a boosted tree. We set `tree = 5000` to grow 5000 trees with a maximal depth of 4 by setting `tree_depth = 4`.
+### Regression Model
 
-```{r}
-boost_spec <- boost_tree(trees = 5000, tree_depth = 4) %>%
-  set_engine("xgboost") %>%
-  set_mode("regression")
-```
+Note that we specify `importance = "impurity"` in the workflow setup above; this is so that we can use `extract_fit_parsnip()` and `vip()` to create and view a variable importance plot.
 
 ```{r}
-boost_fit <- fit(boost_spec, sale_price ~ ., data = ames_train)
+final_rf_model <- finalize_workflow(rf_reg_wf, best_rf_reg)
+final_rf_model <- fit(final_rf_model, wage_train)
 ```
 
 ```{r}
-augment(boost_fit, new_data = ames_test) %>%
-  rmse(truth = sale_price, estimate = .pred)
+final_rf_model %>% extract_fit_parsnip() %>% 
+  vip() +
+  theme_minimal()
 ```
 
-#### Activities
+This plot tells us that the three most useful predictors of wage in this random forest model are whether or not someone has an advanced degree, their age, and whether or not they have health insurance.
 
-- Use cross-validation to tune `tree` and `tree_depth` for the boosted tree model on the Ames data set.
+Let's use the model to make predictions for the testing data and take a look at its **testing RMSE**:
+
+```{r}
+final_rf_model_test <- augment(final_rf_model, wage_test)
+
+rmse(final_rf_model_test, truth = wage, .pred)
+```
+
+We could also view a scatterplot of the actual wage values in the testing set versus the model-predicted values:
+
+```{r}
+final_rf_model_test %>% 
+  ggplot(aes(x = wage, y = .pred)) +
+  geom_point(alpha = 0.5) +
+  theme_minimal()
+```
+
+### Classification Model
+
+Now for our boosted tree model. We did not have to include `importance = "impurity"` in the workflow for this because the package `xgboost`, the default engine, stores variable importance information by default.
+
+```{r}
+final_bt_model <- finalize_workflow(bt_class_wf, best_bt_class)
+final_bt_model <- fit(final_bt_model, penguin_train)
+```
+
+Here is the VIP plot:
+
+```{r}
+final_bt_model %>% extract_fit_parsnip() %>% 
+  vip() +
+  theme_minimal()
+```
+
+This tells us that the top three most important predictors of species were bill length and depth and flipper length.
+
+Let's use the model to make predictions for the testing data and take a look at its **testing ROC AUC**.
+
+Notice that there is a key change here to accommodate the fact that there are more than two levels of our outcome variable. Rather than specifying `.pred_Yes`, for instance, we have to select all the columns of predicted probabilities -- the probability that an observation is species Adelie, Chinstrap, and Gentoo. We can do that by typing `.pred_Adelie:.pred_Gentoo`, which selects not only the first and last columns but any columns in the middle.
+
+```{r}
+final_bt_model_test <- augment(final_bt_model, 
+                               penguin_test) %>% 
+  select(species, starts_with(".pred"))
+
+roc_auc(final_bt_model_test, truth = species, .pred_Adelie:.pred_Gentoo)
+```
+
+The ROC AUC on the testing data is basically 1; the model has done a basically perfect job classifying species. Let's generate the three individual ROC curves:
+
+```{r}
+roc_curve(final_bt_model_test, truth = species, .pred_Adelie:.pred_Gentoo) %>% 
+  autoplot()
+```
+
+And the confusion matrix:
+
+```{r}
+conf_mat(final_bt_model_test, truth = species, 
+         .pred_class) %>% 
+  autoplot(type = "heatmap")
+```
+
+The best-performing boosted tree model has literally done an almost perfect job. It has only misclassified one single penguin in the entire testing set -- a penguin that is actually of species Adelie was predicted to be of species Chinstrap.
+
+### Activities
+
+-   Interpret the scatterplot of predicted vs. actual values for the wage data. Does our model tend to overpredict or underpredict wage? Do you think excluding those observations with an extremely high wage might affect model performance? Do you think it might make sense to do so? Why or why not?
+
+-   Do you think using a different threshold for probabilities would result in the penguin model's correctly predicting every single observation? What threshold value(s) was used in creating the confusion matrix here? How do you know?
 
 ## Resources
 
 The free book [Tidy Modeling with R](https://www.tmwr.org/) is strongly recommended.
-
-## Source
-
-Several parts of this lab come directly from the ["ISLR Tidymodels Labs"](https://emilhvitfeldt.github.io/ISLR-tidymodels-labs/index.htmll). Credit to Emil Hvitfeldt for writing and maintaining the open-source book.

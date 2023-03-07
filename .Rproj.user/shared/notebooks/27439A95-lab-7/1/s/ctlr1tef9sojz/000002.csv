@@ -1,4 +1,0 @@
-"0","rf_fit <- fit(rf_spec, medv ~ ., data = ames_train)
-"
-"2","Error in eval(predvars, data, env) : object 'medv' not found
-"
