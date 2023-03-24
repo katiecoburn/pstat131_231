@@ -1,0 +1,40 @@
+---
+title: "Extra Credit Homework"
+author: "PSTAT 131/231"
+output:
+    html_document:
+      toc: true
+      toc_float: true
+      code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE,
+                      warning = FALSE)
+```
+
+## Extra Credit Homework Assignment
+
+Completion of this homework assignment is not required, but if you choose to do so, you may receive up to 20 extra credit points toward the homework portion of your grade.
+
+A lot of the specifics for these problems -- what levels of hyperparameters to consider, how many folds, etc. -- are left out intentionally. It's up to you to make what you deem to be reasonable decisions about them. Describe and justify what choices you ultimately make as necessary.
+
+Both of these data sets can be installed by loading their corresponding packages and running, for example, the code `data(wine)`.
+
+### Support Vector Machines (10 pts)
+
+Using the `OJ` data set in the `ISLR` package, fit and tune **two** support vector machines -- one with a **polynomial kernel** (for which you should tune both *degree* and *cost*) and one with a **radial kernel** (for which you should tune *cost*).
+
+The outcome of interest is `Purchase`, whether a customer purchased either Citrus Hill or Minute Maid brand orange juice.
+
+Use the following predictors: `PriceCH`, `DiscMM`, `LoyalCH`, and `Store7`.
+
+You should split the data and use stratified *k*-fold cross-validation. Fit your best model overall to your entire training set and use it to predict the testing set. Based on the testing set, present the area under the ROC curve, a plot of the ROC curve, and a confusion matrix.
+
+### *k*-Means Clustering (10 pts)
+
+Using the `wine` data set from the R package `gclus` and the R package `tidyclust`, perform ***k*****-means clustering**. Tune *k* by using *k*-fold cross-validation. Report the optimal number of clusters.
+
+Use the following predictors: `Alcohol` and `Malic`.
+
+Create a scatterplot of the training data with `Alcohol` on the x-axis and `Malic` on the y-axis, where each observation is color-coded according to cluster membership. (You may need to do a little research to make this plot; recommend looking into the `tidyclust` documentation.)

@@ -1,0 +1,202 @@
+---
+title: "Lab 8: Clustering and SVM"
+author: "PSTAT 131/231"
+output:
+    html_document:
+      toc: true
+      toc_float: true
+      code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE,
+                      warning = FALSE)
+```
+
+## Introduction
+
+In this lab, we'll explore doing some unsupervised learning with *k*-means clustering (in which we'll tune *k*, the number of clusters) and how to use and tune support vector machines with both linear and radial kernels. We'll use the Palmer penguins data set for both of these example sections.
+
+### Loading Packages
+
+```{r}
+library(tidymodels)
+library(ISLR)
+library(ISLR2)
+library(tidyverse)
+library(glmnet)
+library(modeldata)
+library(kernlab)
+library(tidyclust)
+library(corrplot)
+library(palmerpenguins) # for the penguins data
+tidymodels_prefer()
+```
+
+### Data
+
+Here we load in the data as in Lab 7, then remove any observations with missingness:
+
+```{r}
+penguins <- as_tibble(palmerpenguins::penguins) %>% 
+  drop_na()
+```
+
+Then we split the data, stratifying by `species`, and use 5-fold cross-validation:
+
+```{r}
+set.seed(3435)
+penguin_split <- initial_split(penguins, strata = "species")
+
+penguin_train <- training(penguin_split)
+penguin_test <- testing(penguin_split)
+
+penguin_folds <- vfold_cv(penguin_train, v = 5, strata = "species")
+
+penguin_pal <- c("#fb7504", "#c65ccc", "#047374")
+
+```
+
+## *k*-means Clustering
+
+Note: You'll likely need to install the package `tidyclust` to run the code in this section.
+
+To simplify the models we'll be fitting, we're just going to use two features, `body_mass_g` (or body mass in grams) and `bill_length_mm` (or bill length in millimeters), to cluster the penguins. Remember that *k*-means clustering is a method of **unsupervised** learning, meaning it is used when we don't have measurements of an outcome variable. That isn't the case here with species, but for the purpose of the example, we will pretend not to know the species of each penguin.
+
+We can view a plot of our two predictors by `species` first to verify that this is a good situation for clustering. It clearly is; there are three fairly distinct clusters of points, one per species, although with a little bit of overlap.
+
+```{r}
+ggplot(penguin_train, aes(body_mass_g, bill_length_mm, color = species)) +
+  geom_point() +
+  scale_color_manual(values = penguin_pal)
+```
+
+Now we'll set up a model that does **not** use species and try out a variety of different cluster solutions, with *k* from 1 all the way up to 10. Notice that `species` is not included in `recipe()`; this time the left-hand side of the `~` is empty. We also use `tune_cluster()` rather than `tune_grid()` -- that is just because `tidyclust` is its own package which works with `tune_cluster()`.
+
+```{r}
+kmeans_spec <- k_means(num_clusters = tune())
+
+kmeans_rec <- recipe(~ body_mass_g + bill_length_mm, data = penguin_train)
+
+kmeans_wflow <- workflow(kmeans_rec, kmeans_spec)
+
+clust_num_grid <- grid_regular(num_clusters(),
+                               levels = 10)
+
+kmeans_res <- tune_cluster(kmeans_wflow, 
+                            penguin_folds, clust_num_grid,
+                            metrics = cluster_metric_set(sse_within_total, sse_total, sse_ratio)
+)
+kmeans_res %>% autoplot()
+```
+
+We can specifically focus on the plot of `sse_ratio` by the number of clusters and make it larger so it's easier to assess:
+
+```{r}
+kmeans_res %>%
+  collect_metrics() %>% 
+  filter(.metric == "sse_ratio") %>%
+  ggplot(aes(x = num_clusters, y = mean)) +
+  geom_point() +
+  geom_line() +
+  theme_minimal() +
+  ylab("mean WSS/TSS ratio, over 5 folds") +
+  xlab("Number of clusters") +
+  scale_x_continuous(breaks = 1:10)
+```
+
+You can imagine that we might pick a slightly different number of clusters if we didn't already know that there are three species of penguins in the data, but this plot, also known as a scree plot, would likely lead us to choose anywhere from 2 to 4 clusters.
+
+## Support Vector Machines
+
+We'll demonstrate how to fit two types of support vector machines, one with a linear kernel and one with a radial kernel. We'll continue to use the Palmer penguins data for these examples, but this time we'll attempt to classify penguins by sex (coded as `male` or `female`) rather than species. Note that support vector machines all support multiclass classification problems as well, but it's easier to visualize them with two-class problems.
+
+We'll use only two features/predictors here as well so we can visualize things more easily; let's use penguins' body mass in grams and bill length in millimeters. We can look at a plot of the predictors, with observations colored by level of the outcome:
+
+```{r}
+ggplot(penguin_train, aes(body_mass_g, bill_length_mm, color = sex)) +
+  geom_point()
+```
+
+This doesn't look like a case where a linear kernel (straight line) would separate the classes very well, but let's try fitting one anyway and see how it goes. We set up the recipe, normalizing all predictors to put both on the same scale, then set up a linear kernel (`svm_poly` with `degree = 1` ) and tune `cost`. We'll use the default range for `cost` and try out five levels.
+
+The autoplot reveals that the best ROC AUC we obtain across folds with a linear kernel is about 0.76 -- not terrible, but not amazing either. We can fit the optimal model here to the training set, then visualize the decision boundary:
+
+```{r}
+svm_rec <- recipe(sex ~ bill_length_mm + body_mass_g,
+                         data = penguin_train) %>% 
+  step_normalize(all_predictors())
+
+svm_linear_spec <- svm_poly(degree = 1, cost = tune()) %>%
+  set_mode("classification") %>%
+  set_engine("kernlab")
+
+svm_linear_wkflow <- workflow() %>% 
+  add_recipe(svm_rec) %>% 
+  add_model(svm_linear_spec)
+
+svm_linear_grid <- grid_regular(cost(), degree(), levels = 5)
+
+svm_linear_res <- tune_grid(svm_linear_wkflow, 
+                            penguin_folds, svm_linear_grid)
+
+svm_linear_res %>% autoplot()
+
+svm_best_linear <- select_best(svm_linear_res)
+
+svm_final_linear_fit <- finalize_workflow(svm_linear_wkflow, svm_best_linear) %>% 
+  fit(penguin_train)
+
+svm_final_linear_fit %>%  
+  extract_fit_engine() %>% 
+  plot()
+```
+
+Now let's try an SVM with a radial kernel, still tuning cost. The autoplot here reveals that we can obtain a much better ROC AUC, about 0.906. We fit the optimal model with a radial kernel to the training set as well, then visualize its decision boundary:
+
+```{r}
+svm_rbf_spec <- svm_rbf(cost = tune()) %>%
+  set_mode("classification") %>%
+  set_engine("kernlab")
+svm_rbf_wkflow <- workflow() %>% 
+  add_recipe(svm_rec) %>% 
+  add_model(svm_rbf_spec)
+
+svm_rbf_grid <- grid_regular(cost(), levels = 5)
+
+svm_rbf_res <- tune_grid(svm_rbf_wkflow, 
+                            penguin_folds, svm_rbf_grid)
+
+svm_rbf_res %>% autoplot()
+
+svm_best_radial <- select_best(svm_rbf_res)
+
+svm_final_radial_fit <- finalize_workflow(svm_rbf_wkflow, svm_best_radial) %>% 
+  fit(penguin_train)
+
+svm_final_radial_fit %>%  
+  extract_fit_engine() %>% 
+  plot()
+```
+
+Now let's look at the performance of this model -- which is the best of our two SVM kernels -- on the testing data:
+
+```{r}
+augment(svm_final_radial_fit, penguin_test) %>% 
+  select(sex, starts_with(".pred")) %>% 
+  roc_curve(sex, .pred_female) %>% 
+  autoplot()
+
+augment(svm_final_radial_fit, penguin_test) %>% 
+  select(sex, starts_with(".pred")) %>% 
+  roc_auc(sex, .pred_female)
+
+augment(svm_final_radial_fit, penguin_test) %>% 
+  select(sex, starts_with(".pred")) %>% 
+  conf_mat(sex, .pred_class) %>% 
+  autoplot(type = "heatmap")
+```
+
+## Resources
+
+The free book [Tidy Modeling with R](https://www.tmwr.org/) is strongly recommended.

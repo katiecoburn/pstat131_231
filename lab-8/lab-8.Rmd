@@ -1,5 +1,5 @@
 ---
-title: "Lab 8: Support Vector Machines"
+title: "Lab 8: Clustering, SVM, Neural Nets"
 author: "PSTAT 131/231"
 output:
     html_document:
