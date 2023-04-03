@@ -1601,7 +1601,6 @@ library(tidymodels)
 library(readr)
 library(corrr)
 library(corrplot)
-library(themis)
 library(discrim)
 library(klaR)
 library(tune)
@@ -1639,8 +1638,8 @@ abalone_recipe &lt;- recipe(age ~ . , data = abalone_train) %&gt;%
   step_normalize(all_predictors())</code></pre>
 <p><em>It’s not explicitly mentioned, but it’s probably a good idea to
 stratify on <code>age</code> when setting up the folds as well. Also,
-the easiest way to handle the potential issue(s) with <code>rings</code>
-is to simply drop it from the data early on (as shown above).</em></p>
+the easiest way to handle the potential issue(s) with rings is to simply
+drop it from the data early on (as shown above).</em></p>
 </div>
 <div id="question-2" class="section level4">
 <h4>Question 2</h4>
@@ -1677,60 +1676,11 @@ tuning <code>neighbors</code>;</li>
 the parameters we’re tuning. Use values of <code>neighbors</code> from
 <span class="math inline">\(1\)</span> to <span class="math inline">\(10\)</span>, the default values of penalty, and
 values of mixture from <span class="math inline">\(0\)</span> to <span class="math inline">\(1\)</span>. Set up 10 levels of each.</p>
-<p><em>To set up the models and workflows for each of these
-three:</em></p>
-<pre class="r"><code>knn_reg &lt;- nearest_neighbor(neighbors = tune()) %&gt;% 
-  set_engine(&quot;kknn&quot;) %&gt;% 
-  set_mode(&quot;regression&quot;)
-
-knn_wkflow &lt;- workflow() %&gt;% 
-  add_recipe(abalone_recipe) %&gt;% 
-  add_model(knn_reg)
-
-lin_mod &lt;- linear_reg() %&gt;% 
-  set_engine(&quot;lm&quot;) %&gt;% 
-  set_mode(&quot;regression&quot;)
-
-lin_wkflow &lt;- workflow() %&gt;% 
-  add_recipe(abalone_recipe) %&gt;% 
-  add_model(lin_mod)
-
-en_mod &lt;- linear_reg(mixture = tune(), penalty = tune()) %&gt;% 
-  set_engine(&quot;glmnet&quot;) %&gt;% 
-  set_mode(&quot;regression&quot;)
-
-en_wkflow &lt;- workflow() %&gt;% 
-  add_recipe(abalone_recipe) %&gt;% 
-  add_model(en_mod)</code></pre>
-<p><em>You can make a grid using the default values of
-<code>penalty</code> either by leaving the function blank –
-<code>penalty()</code> – or by using the documentation
-<code>?penalty</code> to learn that the default values are
-<code>range = c(-10, 0)</code> and specifying them manually.</em></p>
-<pre class="r"><code>knn_grid &lt;- grid_regular(neighbors(range = c(1, 10)),
-                         levels = 10)
-
-en_grid &lt;- grid_regular(penalty(range = c(-10, 0)), 
-                        mixture(range = c(0, 1)), levels = 10)</code></pre>
 <p>How many models total, <strong>across all folds</strong>, will we be
 fitting to the <strong>abalone</strong> <strong>data</strong>? To
 answer, think about how many folds there are, how many combinations of
 model parameters there are, and how many models you’ll fit to each
 fold.</p>
-<p><em>There are <strong>five folds</strong>. To each fold we will be
-fitting <strong>one</strong> linear regression model (there is nothing
-we’re tuning for that model) so that’s</em> <span class="math inline">\(5(1) = 5\)</span> <em>linear regressions. We are
-trying out ten possible values of $k$, meaning that we are considering
-ten candidate KNN models, and we are fitting each of those 10 models to
-each fold, for a total of</em> <span class="math inline">\(5(10) =
-50\)</span> <em>KNN models. Lastly, to consider the number of elastic
-net models being fit, our grid consists of every combination of 10
-values of <code>penalty</code> and 10 values of <code>mixture</code>,
-meaning it has</em> <span class="math inline">\(10 * 10 = 100\)</span>
-<em>rows; there are 100 elastic net models being considered. And we are
-fitting each of those 100 models to each fold, for a total of</em> <span class="math inline">\(5(100) = 500\)</span> <em>EN models.</em></p>
-<p><em>That makes a total of $5 + 50 + 500$, or</em> <span class="math inline">\(555\)</span> <em>models being fit total, across
-all folds.</em></p>
 </div>
 <div id="question-4" class="section level4">
 <h4>Question 4</h4>
@@ -1739,120 +1689,23 @@ all folds.</em></p>
 examples included for help by running <code>?tune_grid</code></em>.
 <em>You can also see the code in <strong>Lab 4</strong> for help with
 the tuning process.</em></p>
-<pre class="r"><code>knn_res &lt;- tune_grid(
-  knn_wkflow,
-  resamples = abalone_folds, 
-  grid = knn_grid
-)
-
-en_res &lt;- tune_grid(
-  en_wkflow,
-  resamples = abalone_folds, 
-  grid = en_grid
-)
-
-lin_res &lt;- fit_resamples(lin_wkflow, abalone_folds)</code></pre>
-<p><em>Note that in the code above I used <code>fit_resamples()</code>
-for the linear regression models rather than <code>tune_grid()</code>.
-Technically it’s correct to use <code>fit_resamples()</code> for models
-where we’re not actually tuning anything. However, as long as
-<code>tune_grid()</code> works/runs for you, you can fit the linear
-regression models with that instead.</em></p>
 </div>
 <div id="question-5" class="section level4">
 <h4>Question 5</h4>
 <p>Use <code>collect_metrics()</code> to print the mean and standard
 errors of the performance metric <strong><em>root mean squared error
 (RMSE)</em></strong> for each model across folds.</p>
-<p><em>The actual method for doing this can vary. Students can also just
-print out the whole result of <code>collect_metrics()</code>. As long as
-they technically meet the requirement(s), it’s fine.</em></p>
-<pre class="r"><code>collect_metrics(knn_res) %&gt;% 
-  filter(.metric == &quot;rmse&quot;) %&gt;% 
-  select(neighbors, mean, std_err) %&gt;% 
-  arrange(mean)</code></pre>
-<pre><code>## # A tibble: 10 × 3
-##    neighbors  mean std_err
-##        &lt;int&gt; &lt;dbl&gt;   &lt;dbl&gt;
-##  1        10  2.28  0.0322
-##  2         9  2.29  0.0317
-##  3         8  2.31  0.0314
-##  4         7  2.33  0.0311
-##  5         6  2.36  0.0306
-##  6         5  2.41  0.0304
-##  7         4  2.46  0.0311
-##  8         3  2.55  0.0337
-##  9         2  2.70  0.0391
-## 10         1  2.91  0.0444</code></pre>
-<pre class="r"><code>collect_metrics(en_res) %&gt;% 
-  filter(.metric == &quot;rmse&quot;) %&gt;% 
-  select(penalty, mixture, mean, std_err) %&gt;% 
-  arrange(mean)</code></pre>
-<pre><code>## # A tibble: 100 × 4
-##          penalty mixture  mean std_err
-##            &lt;dbl&gt;   &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt;
-##  1 0.0000000001    0.222  2.16  0.0325
-##  2 0.00000000129   0.222  2.16  0.0325
-##  3 0.0000000167    0.222  2.16  0.0325
-##  4 0.000000215     0.222  2.16  0.0325
-##  5 0.00000278      0.222  2.16  0.0325
-##  6 0.0000359       0.222  2.16  0.0325
-##  7 0.000464        0.222  2.16  0.0325
-##  8 0.0000000001    0.111  2.16  0.0323
-##  9 0.00000000129   0.111  2.16  0.0323
-## 10 0.0000000167    0.111  2.16  0.0323
-## # … with 90 more rows</code></pre>
-<pre class="r"><code>collect_metrics(lin_res) %&gt;% 
-  filter(.metric == &quot;rmse&quot;) %&gt;% 
-  select(mean, std_err)</code></pre>
-<pre><code>## # A tibble: 1 × 2
-##    mean std_err
-##   &lt;dbl&gt;   &lt;dbl&gt;
-## 1  2.16  0.0338</code></pre>
 <p>Decide which of the models has performed the best. Explain how/why
 you made this decision. Note that each value of the tuning parameter(s)
 is considered a different model; for instance, KNN with <span class="math inline">\(k = 4\)</span> is one model, KNN with <span class="math inline">\(k = 2\)</span> another.</p>
-<p><em>This decision can also vary fairly widely. Students might
-consider the best value of RMSE within a standard error within each
-class of models, then compare across the three classes, or they might
-simply use <code>select_best()</code>, etc. As long as they explain what
-they decided to do and it’s a valid decision, that’s fine. Here, we can
-see that the elastic net models have achieved the overall lowest RMSE
-(not considering standard errors), which is</em> <span class="math inline">\(2.161527\)</span>, for the smallest value of
-<code>penalty</code> and <code>mixture = 0.22</code><em>.</em></p>
 </div>
 <div id="question-6" class="section level4">
 <h4>Question 6</h4>
 <p>Use <code>finalize_workflow()</code> and <code>fit()</code> to fit
 your chosen model to the entire <strong>training set</strong>.</p>
-<pre class="r"><code>final_abalone_mod &lt;- finalize_workflow(en_wkflow, 
-                                       select_best(en_res))
-final_abalone_mod_fit &lt;- fit(final_abalone_mod, abalone_train)</code></pre>
 <p>Lastly, use <code>augment()</code> to assess the performance of your
 chosen model on your <strong>testing set</strong>. Compare your model’s
 <strong>testing</strong> RMSE to its average RMSE across folds.</p>
-<pre class="r"><code>augment(final_abalone_mod_fit, abalone_test) %&gt;% 
-  rmse(age, .pred)</code></pre>
-<pre><code>## # A tibble: 1 × 3
-##   .metric .estimator .estimate
-##   &lt;chr&gt;   &lt;chr&gt;          &lt;dbl&gt;
-## 1 rmse    standard        2.21</code></pre>
-<p><em>Be careful to make sure that students are comparing the
-<strong>correct values</strong> here. They should compare their chosen
-model’s <strong>testing root mean squared error</strong>, which here is
-$2.207555$, to its root mean squared error across folds, which here
-is</em> <span class="math inline">\(2.161527\)</span><em>. They
-<strong>should NOT</strong> use their model’s <strong>training
-RMSE</strong> at <u><strong>all</strong></u> here. (Note that the
-training RMSE would be as shown below:)</em></p>
-<pre class="r"><code># Training RMSE -- should NOT be used:
-
-augment(final_abalone_mod_fit, abalone_train) %&gt;% 
-  rmse(age, .pred)</code></pre>
-<pre><code>## # A tibble: 1 × 3
-##   .metric .estimator .estimate
-##   &lt;chr&gt;   &lt;chr&gt;          &lt;dbl&gt;
-## 1 rmse    standard        2.13</code></pre>
 </div>
 </div>
 <div id="section-2-classification-titanic-survival" class="section level3">
@@ -1863,15 +1716,6 @@ augment(final_abalone_mod_fit, abalone_train) %&gt;%
 stratifying on the outcome variable, <code>survived</code>. You can
 choose the proportions to split the data into. Use <em>k</em>-fold
 cross-validation to create 5 folds from the training set.</p>
-<pre class="r"><code>set.seed(3435)
-
-titanic_split &lt;- titanic %&gt;% 
-  initial_split(strata = survived, prop = 0.7)
-titanic_train &lt;- training(titanic_split)
-titanic_test &lt;- testing(titanic_split)
-
-titanic_folds &lt;- vfold_cv(titanic_train, v = 5, 
-                          strata = survived)</code></pre>
 </div>
 <div id="question-8" class="section level4">
 <h4>Question 8</h4>
@@ -1880,13 +1724,6 @@ titanic_folds &lt;- vfold_cv(titanic_train, v = 5,
 <code>Yes</code> and <code>No</code> levels (you’ll need to specify the
 appropriate function arguments). <em>Note: See Lab 5 for code/tips on
 handling imbalanced outcomes.</em></p>
-<pre class="r"><code>titanic_recipe &lt;- recipe(survived ~ pclass + sex + age + 
-                           sib_sp + parch + fare, titanic_train) %&gt;% 
-  step_impute_linear(age, impute_with = imp_vars(sib_sp)) %&gt;% 
-  # choice of predictors to impute with is up to you
-  step_dummy(all_nominal_predictors()) %&gt;% 
-  step_interact(~ starts_with(&quot;sex&quot;):age + age:fare) %&gt;% 
-  step_upsample(survived, over_ratio = 1)</code></pre>
 </div>
 <div id="question-9" class="section level4">
 <h4>Question 9</h4>
@@ -1901,46 +1738,10 @@ tuning <code>neighbors</code>;</li>
 <p>Set up the grids, etc. the same way you did in Question 3. Note that
 you can use the same grids of parameter values without having to
 recreate them.</p>
-<pre class="r"><code>knn_class_mod &lt;- nearest_neighbor(neighbors = tune()) %&gt;% 
-  set_engine(&quot;kknn&quot;) %&gt;% 
-  set_mode(&quot;classification&quot;)
-
-knn_class_wkflow &lt;- workflow() %&gt;% 
-  add_recipe(titanic_recipe) %&gt;% 
-  add_model(knn_class_mod)
-
-log_class_mod &lt;- logistic_reg() %&gt;% 
-  set_engine(&quot;glm&quot;) %&gt;% 
-  set_mode(&quot;classification&quot;)
-
-log_class_wkflow &lt;- workflow() %&gt;% 
-  add_recipe(titanic_recipe) %&gt;% 
-  add_model(log_class_mod)
-
-en_class_mod &lt;- logistic_reg(mixture = tune(), penalty = tune()) %&gt;% 
-  set_engine(&quot;glmnet&quot;) %&gt;% 
-  set_mode(&quot;classification&quot;)
-
-en_class_wkflow &lt;- workflow() %&gt;% 
-  add_recipe(titanic_recipe) %&gt;% 
-  add_model(en_class_mod)</code></pre>
 </div>
 <div id="question-10" class="section level4">
 <h4>Question 10</h4>
 <p>Fit all the models you created in Question 9 to your folded data.</p>
-<pre class="r"><code>knn_class_res &lt;- tune_grid(
-  knn_class_wkflow,
-  resamples = titanic_folds, 
-  grid = knn_grid
-)
-
-en_class_res &lt;- tune_grid(
-  en_class_wkflow,
-  resamples = titanic_folds, 
-  grid = en_grid
-)
-
-log_class_res &lt;- fit_resamples(log_class_wkflow, titanic_folds)</code></pre>
 </div>
 <div id="question-11" class="section level4">
 <h4>Question 11</h4>
@@ -1949,52 +1750,6 @@ errors of the performance metric <strong><em>area under the ROC
 curve</em></strong> for each model across folds.</p>
 <p>Decide which of the models has performed the best. Explain how/why
 you made this decision.</p>
-<pre class="r"><code>collect_metrics(knn_class_res) %&gt;% 
-  filter(.metric == &quot;roc_auc&quot;) %&gt;% 
-  select(neighbors, mean, std_err) %&gt;% 
-  arrange(desc(mean))</code></pre>
-<pre><code>## # A tibble: 10 × 3
-##    neighbors  mean std_err
-##        &lt;int&gt; &lt;dbl&gt;   &lt;dbl&gt;
-##  1        10 0.814  0.0311
-##  2         9 0.814  0.0315
-##  3         8 0.810  0.0321
-##  4         7 0.809  0.0310
-##  5         6 0.805  0.0322
-##  6         5 0.802  0.0321
-##  7         4 0.799  0.0326
-##  8         3 0.782  0.0283
-##  9         2 0.753  0.0316
-## 10         1 0.728  0.0275</code></pre>
-<pre class="r"><code>collect_metrics(en_class_res) %&gt;% 
-  filter(.metric == &quot;roc_auc&quot;) %&gt;% 
-  select(penalty, mixture, mean, std_err) %&gt;% 
-  arrange(desc(mean))</code></pre>
-<pre><code>## # A tibble: 100 × 4
-##          penalty mixture  mean std_err
-##            &lt;dbl&gt;   &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt;
-##  1 0.00599         0.111 0.842  0.0201
-##  2 0.000464        1     0.841  0.0213
-##  3 0.000464        0.667 0.841  0.0213
-##  4 0.000464        0.778 0.841  0.0213
-##  5 0.0000000001    1     0.841  0.0213
-##  6 0.00000000129   1     0.841  0.0213
-##  7 0.0000000167    1     0.841  0.0213
-##  8 0.000000215     1     0.841  0.0213
-##  9 0.00000278      1     0.841  0.0213
-## 10 0.0000359       1     0.841  0.0213
-## # … with 90 more rows</code></pre>
-<pre class="r"><code>collect_metrics(log_class_res) %&gt;% 
-  filter(.metric == &quot;roc_auc&quot;) %&gt;% 
-  select(mean, std_err) %&gt;% 
-  arrange(desc(mean))</code></pre>
-<pre><code>## # A tibble: 1 × 2
-##    mean std_err
-##   &lt;dbl&gt;   &lt;dbl&gt;
-## 1 0.841  0.0213</code></pre>
-<p><em>Again, if we choose not to consider standard errors, one of the
-elastic net models performs the best; the students’ choice can vary, but
-they should mention how they arrived at that choice, etc.</em></p>
 </div>
 <div id="question-12" class="section level4">
 <h4>Question 12</h4>
@@ -2004,19 +1759,6 @@ your chosen model to the entire <strong>training set</strong>.</p>
 chosen model on your <strong>testing set</strong>. Compare your model’s
 <strong>testing</strong> ROC AUC to its average ROC AUC across
 folds.</p>
-<pre class="r"><code>final_titanic_mod &lt;- finalize_workflow(en_class_wkflow, 
-                                       select_best(en_class_res))
-final_titanic_mod_fit &lt;- fit(final_titanic_mod, titanic_train)
-
-augment(final_titanic_mod_fit, titanic_test) %&gt;% 
-  roc_auc(survived, .pred_Yes)</code></pre>
-<pre><code>## # A tibble: 1 × 3
-##   .metric .estimator .estimate
-##   &lt;chr&gt;   &lt;chr&gt;          &lt;dbl&gt;
-## 1 roc_auc binary         0.894</code></pre>
-<p><em>Again, make sure that students are comparing the correct numbers
-here. They should write a sentence or two comparing the two numbers and
-theorizing as to why any differences might have arisen, etc.</em></p>
 </div>
 </div>
 </div>
@@ -2033,20 +1775,6 @@ uncorrelated errors.</p>
 <div id="question-13" class="section level3">
 <h3>Question 13</h3>
 <p>Derive the least-squares estimate of <span class="math inline">\(\beta\)</span>.</p>
-<p><span class="math display">\[
-Y = \beta + \epsilon
-\]</span></p>
-<p><span class="math display">\[
-E[Y] = E[\beta + \epsilon]
-\]</span></p>
-<p><span class="math display">\[
-E[Y] = E[\beta] + E[\epsilon]
-\]</span></p>
-<p><span class="math display">\[
-E[Y] = \beta+0
-\]</span> <span class="math display">\[
-\hat{\beta}=\bar{Y}
-\]</span></p>
 </div>
 <div id="question-14" class="section level3">
 <h3>Question 14</h3>
@@ -2057,38 +1785,6 @@ estimator of <span class="math inline">\(\beta\)</span> that we obtain
 by taking the first fold as a training set, and <span class="math inline">\(\hat{\beta}^{(2)}\)</span>, the least-squares
 estimator of <span class="math inline">\(\beta\)</span> that we obtain
 by taking the second fold as a training set?</p>
-<p><em>In order to find the least-squares estimate of</em> <span class="math inline">\(\beta\)</span>, we want to minimize <span class="math inline">\(\sum_{i=1}^{n}(y_{i}-\hat{\beta})^2\)</span>.</p>
-<p><em>The first-order condition with respect to</em> <span class="math inline">\(\hat{\beta}\)</span> is:</p>
-<p><span class="math display">\[
--2\sum_{i=1}^{n}(y_{i}-\hat{\beta})=0
-\]</span></p>
-<p><span class="math display">\[
-\sum_{i=1}^{n}y_{i}=n\hat{\beta}
-\]</span></p>
-<p><span class="math display">\[
-n\bar{y}=n\hat{\beta}
-\]</span></p>
-<p><span class="math display">\[
-\hat{\beta}_{OLS}=\bar{y}
-\]</span></p>
-<p><em>We know that</em> <span class="math inline">\(\hat{\beta}^{(1)} =
-\frac{1}{n-1}\sum_{i\neq1}^{n}y_{i}\)</span> and <span class="math inline">\(\hat{\beta}^{(2)} =
-\frac{1}{n-1}\sum_{i\neq2}^{n}y_{i}\)</span>. So the covariance formula
-is:</p>
-<p><span class="math display">\[
-Cov(\hat{\beta}^{(1)} \hat{\beta}^{(2)}) =
-Cov(\frac{1}{n-1}\sum_{i\neq1}^{n}y_{i}
-\frac{1}{n-1}\sum_{i\neq2}^{n}y_{i})
-\]</span></p>
-<p><span class="math display">\[
-=\frac{1}{(n-1)^2}[Var(y_3)+...+Var(y_n)]
-\]</span></p>
-<p><span class="math display">\[
-=\frac{1}{(n-1)^2}[Var(\epsilon_3)+...+Var(\epsilon_n)]
-\]</span></p>
-<p><span class="math display">\[
-=\frac{n-2}{(n-1)^2}\sigma^2
-\]</span></p>
 </div>
 </div>
 
