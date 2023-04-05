@@ -1,0 +1,213 @@
+---
+title: "Probability and Statistics II"
+author: "PSTAT 120B"
+date: "Spring 2023"
+output: pdf_document
+header-includes:
+    - \usepackage{geometry}
+    - \usepackage{fancyhdr}
+    - \usepackage{url}
+    - \usepackage{booktabs}
+    - \usepackage{hyperref}
+    - \usepackage{color}
+    - \usepackage{lastpage}
+    - \usepackage{multirow}
+    - \usepackage{graphicx}
+    - \usepackage{lscape}
+    - \usepackage{float}
+#    - \usepackage{draftwatermark}
+link-citations: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+\pagestyle{fancy}
+\lhead{Spring 2023}
+\chead{}
+\rhead{120B Syllabus}
+\lfoot{}
+\cfoot{\small \thepage}
+\rfoot{}
+
+\begin{center}
+\begin{tabular}{ll}
+\textsc{Instructor:} &Dr. Coburn (\href{mailto:katie\_m\_coburn@ucsb.edu}{\texttt{katie\_m\_coburn@ucsb.edu}}) \\
+\textsc{Teaching Assistants:} &Doris Padilla (\href{mailto:dorispadilla@ucsb.edu}{\texttt{dorispadilla@ucsb.edu}}) \\
+    &Xiaoran Ma (\href{mailto:xiaoran\_ma@ucsb.edu}{\texttt{xiaoran\_ma@ucsb.edu}}) \\
+    &Manan Vats (\href{mailto:manan@ucsb.edu}{\texttt{manan@ucsb.edu}}) \\
+\textsc{Lecture:} &MW 2:00 - 3:15 pm BUCHN 1920 \\
+\textsc{Sections:}
+&W 9:00 - 9:50 am HSSB 1231 \textsc{Padilla} \\
+&W 10:00 - 10:50 am HSSB 1215 \textsc{Ma} \\
+&W 11:00 - 11:50 am ILP 3310 \textsc{Ma} \\
+&W 12:00 - 12:50 pm ILP 4101 \textsc{Padilla} \\
+&W 1:00 - 1:50 pm ILP 4205 \textsc{Vats} \\
+\end{tabular}
+\end{center}
+
+\section*{Course information}
+
+\subsection*{Description}
+\textsc{Distribution} of sample mean and sample variance; t, chi-squared and F distributions; summarizing data by statistics and graphs; estimation theory for single samples: sufficiency, efficiency, consistency, method of moments, maximum likelihood; hypothesis testing: likelihood ratio test; confidence intervals. Prerequisite: Probability and Statistics I (PSTAT 120A). Credit units: 4.
+
+\subsection*{Format}
+\textsc{Lectures} and sections will be provided \textbf{in person only}. Any lecture slides will be posted on GauchoSpace before the corresponding class. The class will progress according to a weekly schedule (provided below).
+
+\vskip6pt\noindent Should you need to \textbf{switch sections}, please ask the TA of the section you want to switch to if there is room for you to attend. If the TA allows, you can then begin attending the new section while remaining officially enrolled in your previous section.
+
+\subsection*{Materials}
+\textsc{Readings} will cover chapters 6 through 10 of Mathematical Statistics with Applications by D. Wackerly, W. Mendenhall, and R. Scheaffer (Cengage Learning, 7th Edition, ISBN-10: 0-495-38508-5). The textbook is essential and the weekly schedule will follow it closely. It is available for purchase or rental in eBook, print hardcover, and print softcover formats. The publisher’s website has rental options for the eBook and rental and purchase options for print copies. Amazon offers an eBook purchase. The most affordable option is an eBook rental.
+
+\vskip6pt\noindent Additional free online resources that you may find useful include:
+
+\begin{itemize}
+    \item Open access Introduction to Probability, Statistics, and Random Processes by Hossein PishroNik e-book: https://www.probabilitycourse.com/, especially chapters 7-8. Covers same material, organized differently.
+    \item OpenIntro Statistics: https://www.openintro.org/book/os/, especially chapters 5-7. Covers same material, organized differently.
+    \item OpenIntro Biostatistics: https://www.openintro.org/book/biostat/, especially chapters 4-5. Covers applications of the material in sciences.
+\end{itemize}
+
+\subsection*{Learning Outcomes}
+In this course, students will:
+\begin{enumerate}
+    \item \textsc{State and interpret} key concepts in estimation and inference (e.g., statistic, sampling distribution, bias, power) and major theorems (e.g., central limit theorem, weak law of large numbers, Rao-Blackwell theorem, Neyman-Pearson lemma).
+    \item \textsc{Derive} point estimators, confidence intervals, and hypothesis tests for the parameters of common distributions from first principles.
+    \item \textsc{Evaluate} the quality of estimation and inference methods using appropriate concepts (bias, variance, consistency, efficiency, type I and type II error, and approximation or exactness).
+\end{enumerate}
+
+\subsection*{Assessments}
+\textsc{Your attainment} of course learning outcomes will be measured by the following assessments, with the relative weighting indicated in parentheses. All assignments within each category are given equal weight.
+
+\begin{itemize}
+\item \textbf{Homework} (25\%). Homework will be assigned once weekly on Mondays and due seven days after it is assigned (the following Monday) at 11:59 PM PDT. Each homework consists of a reading outline and a problem section. The reading outlines prompt you to state and interpret key concepts and results in the material for that week, and the problems require you to apply the key concepts and results to specific examples. Each homework will be worth 15 points; you must complete \textbf{both} sections to receive full credit. Points will be allocated based on \textbf{completion}, not correctness, and you must \textbf{attempt all problems} to receive full credit. There are \textbf{nine} required homework assignments (\#1 - \#9). No homework scores will be dropped.
+
+\item \textbf{Quizzes} (15\%). Approximately every week \textbf{during section} you will be given a short quiz. Each quiz will comprise \textbf{one problem} based on the most recent \textbf{homework assignment} for the course; the problems will usually be very similar, with some numbers changed, etc. Therefore, as long as you have successfully completed the homework and made use of office hours as necessary, you should be prepared for the quiz. You are expected to complete the quizzes \textbf{on your own}. There are \textbf{eight} quizzes total and your lowest quiz score will be dropped.
+
+\vskip6pt\noindent The quiz will be offered each week approximately 30 minutes before the end of section. You will have 15 minutes to complete the quiz, followed by a 15-minute period of grading and review, during which you will grade your \textbf{own quiz}, guided by your TA, on a 5-point scale ($0 = F, 1 = D, 2 = C, 3 = B, 4 = A$). The TA will also go over the answer during this period. You will turn your quiz in to your TA at the end of section to receive credit, and will receive full credit as long as you submit a \textbf{completed and graded quiz} (regardless of performance).
+
+\item \textbf{Midterm Exam} (35\%). The midterm exam will be offered \textbf{in person during class} on Wednesday of Week 6, May 10th. More details on the specific contents of the exam will be made available in the weeks leading up to it. It will comprise several problems based on the previous course content. You will be permitted to create and bring a cheat sheet consisting of both sides of an 8.5 x 11 sheet of paper (handwritten, typed, or both are fine) and a scientific calculator.
+
+\item \textbf{Final Exam} (25\%). The final exam will be a \textbf{take-home exam}. You will have five days to complete the exam; it will be released on GauchoSpace at 7:00 AM PST on June 8th and will be due the day of the course's scheduled final, Monday, June 12th, by midnight (11:59 PM PST). You are expected to work on the final exam on your own and may use any course materials to aid you in this process. 
+
+\end{itemize}
+
+\subsection*{Class Schedule}
+\textsc{The weekly} schedule is provided below. If necessary, the topics and reading are subject to change based on the progress of the class.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Date} & \textbf{Topic} & \textbf{Reading} & \textbf{Notes} \\ \midrule
+Week 1 & Introduction and review & 5.2 - 5.8, 5.11 & Homework 1 \\
+ &  &  &  \\
+Week 2 & Transformation of random variables & 6.1 - 6.5 & Homework 2 \\
+&  &  & Quiz 1 \\
+Week 3 & Central limit theorem & 7.1 - 7.4 & Homework 3 \\
+ &  &  & Quiz 2 \\
+Week 4 & Point estimation I - concepts & 8.1 - 8.4 & Homework 4 \\
+ &  &  & Quiz 3 \\
+Week 5 & Point estimation II - optimality & 9.4 - 9.5, addenda & Homework 5 \\
+ &  &  & Quiz 4 \\
+Week 6 & Point estimation III - methods & 9.6 - 9.9 & Homework 6 \\
+ &  &  & Midterm \\
+Week 7 & Interval estimation & 8.5 - 8.8 & Homework 7 \\
+ &  &  & Quiz 5 \\
+Week 8 & Hypothesis testing I - concepts & 10.1 - 10.6 & Homework 8 \\
+ &  &  & Quiz 6 \\
+Week 9 & Hypothesis testing II - applications & 10.8 & Homework 9 \\
+ &  &  & Quiz 7 \\
+Week 10 & Hypothesis testing III - optimality & 10.9 - 10.10 &  \\
+ &  &  & Quiz 8 \\ \bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{Time Commitment}
+\textsc{The course} is 4 credit units; each credit unit corresponds to an approximate time commitment of 3 hours. You should expect to allocate 12 hours per week to the course. If you find yourself spending considerably more time on the course on a regular basis, please let the instructor or TAs know so that we can help you balance the workload.
+
+\noindent A suggested allocation of this time is as follows: 
+\begin{itemize}
+    \item Reading and class time: 5 hours (42\%)
+    \item Homework: 5 hours (42\%)
+    \item Sections: 2 hour (16\%)
+\end{itemize}
+
+\section*{Course Policies}
+
+\subsection*{Communication}
+\textsc{There are four} means of communication with other students or the instructional team: during/after class, office hours, email, and individual appointments. \textbf{Please use them in that order}. Note that I can be slow at responding to email, which is why it is low on the list; to compensate, however, I offer several office hours weekly and am always willing to discuss problems or answer questions in person/during class.
+\begin{enumerate}
+
+    \item \textbf{During/after class}. The easiest guaranteed way to contact me is to come up after class and say hello, or to raise your hand and ask a question during class.
+    
+    \item \textbf{Office hours}. Office hours are offered at a minimum of twice weekly. I offer 2 office hours a week, and the other(s) are held by various combinations of TAs or ULAs. These are opportunities to interact informally, ask questions, and discuss course material or assignments.
+    
+    \item \textbf{Email}. Please use email with discernment for simple communication. A response is guaranteed within 48 weekday hours (so if you email on Friday afternoon, you may not receive a reply until Tuesday afternoon). If your message is time-sensitive, please indicate so in the subject, and I will do my best to respond promptly.
+
+    \item \textbf{Appointment}. You can schedule individual 20-minute appointments with me as needed. These appointments may be either on Zoom or in person. This mode of communication is best suited to more complex or nuanced communication regarding personal matters. If you schedule an appointment, you will be prompted to indicate what you wish to discuss. 
+\end{enumerate}
+
+\subsection*{Extra Credit} 
+\textsc{If the entire} class reaches a 90\% submission rate of ESCI surveys, the \textbf{entire class} will receive 5 free points on their final exam.
+
+\subsection*{Grades} 
+\textsc{Your overall grade} in the course will be calculated as the weighted average of the proportions of total possible points in each assessment category according to the weightings indicated in the Assessments section and reported as a percentage rounded to two decimal places. Letter grades will be assigned according to the rubric below.
+
+\begin{center}
+\begin{tabular}{lr}
+    A+ &100\% \\
+    A &93\% -- 99.99\%  \\
+    A- &90\% -- 92.99\% \\
+    B+ &87\% -- 89.99\% \\
+    B &83\% -- 86.99\% \\
+    B- &80\% -- 82.99\% \\
+    C+ &77\% -- 79.99\% \\
+    C &73\% -- 76.99\% \\
+    C- &70\% -- 72.99\% \\
+    D+ &67\% -- 69.99\% \\
+    D &60\% -- 66.99\% \\
+    F &0\% -- 59.99\%
+\end{tabular}
+\end{center}
+
+\noindent \textsc{You can} keep track of your marks on individual assessments, your marks in each assessment category, and your overall grade in the GauchoSpace gradebook. Please notify the instructor or TAs of any errors in grade \textit{entry}; please do not attempt to negotiate the grades themselves. If, at the end of the course, you believe your grade was unfairly assigned, you are entitled to contest it according to the procedure outlined \href{https://my.sa.ucsb.edu/catalog/Current/AcademicPoliciesProcedures/ContestedGrades.aspx}{here} in the UCSB General Catalog.
+
+\subsection*{Deadlines} 
+\textsc{You receive} two free late homework submissions of up to \textbf{24 hours} without penalty. This policy applies only to homeworks. There is no need to notify the instructor or TAs to use these late allowances; simply submit within one week of the original deadline.
+
+\vskip6pt\noindent \textsc{Late quizzes, exams}, and non-exempted homeworks will receive no credit; please plan ahead and submit your work on time.
+
+\subsection*{Extensions} 
+\textsc{Extensions} may be granted based on individual circumstances at the instructor's discretion.
+
+\subsection*{Conduct} 
+\textsc{Please be mindful} of maintaining respectful and kind communication.  You are expected to uphold the UCSB student code of conduct in your behavior when in class, in section, or interacting with other students or the instructional team. You can find the student code of conduct on the Office of Student Conduct website from \href{http://studentconduct.sa.ucsb.edu/policies-procedures}{this page}. If you are uncomfortable with the conduct of another individual for any reason, please notify the instructor or TAs.
+
+\subsection*{Academic Integrity} 
+\textsc{Please maintain integrity} in learning. Your work in the course must be your own. Any form of plagiarism, cheating, misrepresentation of individual effort on assignments and assessments, falsification of information or documents, or misuse of course materials compromises your own learning experience, that of your peers, and undermines the integrity of the UCSB community. Any evidence of dishonest conduct will be discussed with the student(s) involved and reported to the Office of Student Conduct. Depending on the nature of the evidence and the violation, penalty in the course may range from loss of credit to automatic failure. For a definition and examples of dishonesty, a discussion of what constitutes an appropriate response from faculty, and an explanation of the reporting and investigation process, see the \href{https://studentconduct.sa.ucsb.edu/academic-integrity}{OSC page on academic integrity}. 
+
+\subsection*{Accommodations} 
+\textsc{Reasonable accommodations} will be made for any student with a qualifying disability. Such requests should be made through the Disabled Students Program (DSP). More information, instructions on how to access accommodations, and information on related resources can be found on \href{https://dsp.sa.ucsb.edu/}{DSP website}.
+
+\subsection*{Student Evaluations} 
+\textsc{Toward the end} of the term, you will be given an opportunity to provide feedback about the course. Your suggestions and assessments are essential to improving the course, so please take the time to fill out the evaluations thoughtfully. 
+
+\subsection*{Student Resources}
+\textsc{Any students} in need are encouraged to make use of the following resources.
+
+\begin{itemize}
+    \item Financial Crisis Response Team \\ 
+    \href{https://food.ucsb.edu/about/committees/financial-crisis-response-team}{https://food.ucsb.edu/about/committees/financial-crisis-response-team}
+    \item Food Security and Basic Needs (Food, Housing, Technology) Advising Center \\
+    \href{https://food.ucsb.edu/resources/basic-needs-advocates}{https://food.ucsb.edu/resources/basic-needs-advocates}
+    \item Undocumented Student Services \\
+    \href{http://www.sa.ucsb.edu/dreamscholars/home}{http://www.sa.ucsb.edu/dreamscholars/home}
+    \item Campus Advocacy, Resources, and Education (CARE) \\
+    \href{https://care.ucsb.edu/}{https://care.ucsb.edu/} \\
+    24/7 Confidential Phone: (805) 893-4613
+    \item The Trevor Project \\  \href{https://www.thetrevorproject.org/}{https://www.thetrevorproject.org/}
+    \item Counseling and Psychological Services (CAPS) \\ 
+    \href{https://caps.sa.ucsb.edu/}{https://caps.sa.ucsb.edu/} \\
+    24/7 Counselors: (805) 893-4411, press 2
+\end{itemize}

@@ -54,12 +54,10 @@ knitr::opts_chunk$set(echo = TRUE)
 \begin{tabular}{ll}
 \textsc{Instructor:} &Dr. Katie Coburn (\href{mailto:katie\_m\_coburn@ucsb.edu}{\texttt{katie\_m\_coburn@ucsb.edu}}) \\
 \textsc{Teaching Assistants:} &Mingzhao Hu (\href{mailto:mingzhaohu@ucsb.edu}{\texttt{mingzhaohu@ucsb.edu}})\\
-    &Huiyu Jiang (\href{mailto:huiyujiang@ucsb.edu}{\texttt{huiyujiang@ucsb.edu}}) \\
-    &Kuai Yu (\href{mailto:kuaiyu@ucsb.edu}{\texttt{kuaiyu@ucsb.edu}}) \\
-    &Alvin Liu (\href{mailto:ziyueliu@ucsb.edu}{\texttt{ziyueliu@ucsb.edu}}) \\
-    &John O'Brien (\href{mailto:johnobrien@ucsb.edu}{\texttt{johnobrien@ucsb.edu}}) \\
+    &Jiaxi Wu (\href{mailto:jiaxi\_wu@ucsb.edu}{\texttt{jiaxi\_wu@ucsb.edu}}) \\
+    &Qiqi Li (\href{mailto:qiqili@ucsb.edu}{\texttt{qiqili@ucsb.edu}}) \\
 \textsc{Undergraduate Learning Assistants:} &Ryan Stofer (\href{mailto:rstofer@ucsb.edu}{\texttt{rstofer@ucsb.edu}}) \\
-&Allen Wang (\href{mailto:xin874@ucsb.edu}{\texttt{xin874@ucsb.edu}}) \\
+&Jae Yun (\href{mailto:jaewoong@umail.ucsb.edu}{\texttt{jaewoong@umail.ucsb.edu}}) \\
 \textsc{Lecture:} &MW 5:00 - 6:15 pm North Hall 1006 \\
 \end{tabular}
 \end{center}
@@ -164,12 +162,12 @@ them mathematically;
 \section*{Course Policies}
 
 \subsection*{Communication}
-\textsc{There are four} means of communication with other students or the instructional team: during/after class, office hours, email, and individual appointments. \textbf{Please use them in that order}. Note that I am notoriously slow at responding to email, which is why it is low on the list; to compensate, however, I offer several office hours weekly and am always willing to discuss problems or answer questions in person/during class.
+\textsc{There are four} means of communication with other students or the instructional team: during/after class, office hours, email, and individual appointments. \textbf{Please use them in that order}. Note that I can be slow at responding to email, which is why it is low on the list; to compensate, however, I offer several office hours weekly and am always willing to discuss problems or answer questions in person/during class.
 \begin{enumerate}
 
     \item \textbf{During/after class}. The easiest guaranteed way to contact me is to come up after class and say hello, or to raise your hand and ask a question during class.
     
-    \item \textbf{Office hours}. Office hours are offered at a minimum of twice weekly. I offer 4 office hours a week, and the other(s) are held by various combinations of TAs or ULAs. These are opportunities to interact informally, ask questions, and discuss course material or assignments.
+    \item \textbf{Office hours}. Office hours are offered at a minimum of twice weekly. I offer 2 office hours a week, and the other(s) are held by various combinations of TAs or ULAs. These are opportunities to interact informally, ask questions, and discuss course material or assignments.
     
     \item \textbf{Email}. Please use email with discernment for simple communication. A response is guaranteed within 48 weekday hours (so if you email on Friday afternoon, you may not receive a reply until Tuesday afternoon). If your message is time-sensitive, please indicate so in the subject, and I will do my best to respond promptly.
 
