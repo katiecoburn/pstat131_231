@@ -19,7 +19,7 @@ This lab will look at the various ways we can introduce non-linearity into our m
 
 This chapter will use ['parsnip'](https://www.tidymodels.org/start/models/) for model fitting and ['recipes and workflows'](https://www.tidymodels.org/start/recipes/) to perform the transformations.
 
-We will be using the `Wage` data set from the `ISLR` package. 
+We will be using the `Wage` data set from the `ISLR` package.
 
 ### Loading Packages
 
@@ -28,46 +28,93 @@ We load `tidymodels` for modeling functions, `ISLR` for data sets, and the `tidy
 ```{r}
 library(tidymodels)
 library(ISLR)
+library(ISLR2)
 library(tidyverse)
+library(glmnet)
+library(modeldata)
+library(ggthemes)
+library(janitor) # for naming conventions
+library(naniar) # to assess missing data patterns
+library(corrplot) # for a correlation plot
+library(patchwork) # for putting plots together
+library(rpart.plot)
 tidymodels_prefer()
 ```
 
 ### Data
 
-We'll be working with the `Wage` data set for this lab.
+We'll be working with the `Wage` data set for this lab. It consists of wage information and some data on a number of other variables for a sample size of approximately 3,000 male workers in the mid-Atlantic region.
 
 ```{r}
-Wage <- as_tibble(Wage)
+wage <- as_tibble(Wage) %>% 
+  clean_names()
+```
+
+We can check the data quickly to see if there is any missingness, but there is none, so we won't print the plot here because it doesn't really convey any information. However, feel free to uncomment the following line and run it to verify.
+
+```{r}
+# vis_miss(wage)
+```
+
+Here is a correlation matrix of `age`, `wage`, and `year`:
+
+```{r}
+wage %>% 
+  select(is.numeric, -logwage) %>% 
+  cor() %>% 
+  corrplot(type = "lower", diag = FALSE)
+```
+
+It's also worth taking a look at the relationships between some of the categorical predictor variables and the outcome, and at the distributions of the outcome and the continuous predictor `age`:
+
+```{r}
+p1 <- wage %>% ggplot(aes(y = education, fill = maritl,
+                          x = wage)) +
+  stat_summary(fun = "mean", geom = "bar", 
+               position = "dodge") + theme_bw()
+p2 <- wage %>% ggplot(aes(x = health_ins, fill = jobclass)) +
+  geom_bar(position = "fill") + theme_bw()
+p3 <- wage %>% ggplot() +
+  geom_histogram(aes(x = wage), fill = "red") + theme_bw()
+p4 <- wage %>% ggplot() +
+  geom_histogram(aes(x = age), fill = "blue") + theme_bw()
+p1 + p2 + p3 + p4 +
+  plot_layout(ncol = 2)
 ```
 
 #### Activities
 
-- Access the help page for `Wage`. Familiarize yourself with the subject of the data set and the predictor variables.
+-   Access the help page for `Wage`. Familiarize yourself with the predictor variables that are included.
+-   Do you think the variable `region` will be useful in this data set? Why or why not? (Looking at the distribution of the variable might help in answering this question.)
+-   What patterns or relationships do you notice between marital status, education level, and average wage?
+-   Is the proportion of male employees with health insurance the same across levels of job class?
 
-## The Initial Split
+#### The Initial Split
 
 We can start, as normal, by splitting the data into training and testing sets, using stratified sampling.
 
 ```{r}
 set.seed(3435)
-Wage_split <- initial_split(Wage, strata = "wage")
+wage_split <- initial_split(wage, strata = "wage")
 
-Wage_train <- training(Wage_split)
-Wage_test <- testing(Wage_split)
+wage_train <- training(wage_split)
+wage_test <- testing(wage_split)
+
+wage_folds <- vfold_cv(wage_train, v = 5, strata = "wage")
 ```
 
-## Polynomial Regression and Step Functions
+## Polynomial Regression Tuning
 
-Polynomial regression can be thought of as doing polynomial expansion on a variable and passing that expansion into a linear regression model. We will be very explicit in this formulation here. `step_poly()` allows us to do a polynomial expansion on one or more variables.
+Polynomial regression can be thought of as doing polynomial expansion on a variable and passing that expansion into a linear regression model. `step_poly()` allows us to do a polynomial expansion on one or more variables.
 
-The following step will take `age` and replace it with the variables `age`, `age^2`, `age^3`, and `age^4` since we set `degree = 4`.
+We'll start out with the `age` predictor and attempt to tune the value of degree in order to determine its optimal value, from 1 to 10. Notice that we can flag this argument for tuning even though it is part of the recipe; you can also tune certain parameters by flagging them in the recipe.
 
 ```{r}
-rec_poly <- recipe(wage ~ age, data = Wage_train) %>%
-  step_poly(age, degree = 4)
+rec_poly <- recipe(wage ~ age, data = wage_train) %>%
+  step_poly(age, degree = tune())
 ```
 
-This recipe is combined with a linear regression specification and combined to create a workflow object.
+This recipe is combined with a linear regression specification (since we're dealing with a continuous outcome, which is workers' raw wage) and then used to create a workflow object. We also set up a grid of degree values to try out, using `grid_regular()`:
 
 ```{r}
 lm_spec <- linear_reg() %>%
@@ -77,230 +124,159 @@ lm_spec <- linear_reg() %>%
 poly_wf <- workflow() %>%
   add_model(lm_spec) %>%
   add_recipe(rec_poly)
+
+degree_grid <- grid_regular(degree(range = c(1, 10)), 
+                            levels = 10)
 ```
 
-This object can now be `fit()`:
+We can use `tune_grid()` to fit these models to the folds:
 
 ```{r}
-poly_fit <- fit(poly_wf, data = Wage)
-poly_fit
+poly_tune <- tune_grid(poly_wf, resamples = wage_folds, 
+                       grid = degree_grid)
+autoplot(poly_tune)
 ```
 
-And we can pull the coefficients using `tidy()`:
+One thing you may notice right away from the `autoplot()` results is that none of these models does very well when it comes to predicting `wage`. RMSE and $R^2$ both see their biggest gains in terms of performance as we go from a degree one to a degree two polynomial, and although there are some small fluctuations beyond that, degree two might be optimal here in terms of parsimony. In addition, the $R^2$ value never goes beyond 0.10 (if that), meaning that age alone explains less than 10% of variation in employee wage.
+
+What have we essentially fit here? We've fit:
+
+$$
+Wage=\beta_0+f(Age)
+$$
+
+where
+
+$$
+f(Age)=\beta_1Age+...\beta_dAge^d
+$$
+
+for values of $d = 1,…,10$ (and we've fit each of these 10 models once per fold, for a total of 50 polynomial regressions).
+
+Another common approach is to include multiple continuous variables in `step_poly()` and specify `degree = tune()`, which then results in tuning the degree for each of these polynomial expansions simultaneously and picking the optimal degree to use for all the selected predictors.
+
+We'll select the best model using `select_best()`, then fit our model to the training set and calculate its performance on the testing set.
 
 ```{r}
-tidy(poly_fit)
+best_degree <- select_best(poly_tune)
+
+poly_final <- finalize_workflow(poly_wf, best_degree)
+
+poly_final_fit <- fit(poly_final, data = wage_train)
 ```
 
-`step_poly()` returns variables that are a basis of orthogonal polynomials, which means that each of the columns is a linear combination of the variables `age`, `age^2`, `age^3`, and `age^4`. We can see this by using poly() directly with `raw = FALSE` since it is the default:
+Note that we define a metric set here so we can call both the RMSE and $R^2$ functions on the testing set with only one line of code. This isn't technically necessary but can help make things neater.
 
 ```{r}
-poly(1:6, degree = 4, raw = FALSE)
+wage_metrics <- metric_set(rmse, rsq)
+
+augment(poly_final_fit, new_data = wage_test) %>%
+  wage_metrics(wage, .pred)
 ```
 
-We see that these variables don’t directly have a format we would have assumed. But this is still a well-reasoned transformation. We can get the raw polynomial transformation by setting `raw = TRUE`.
+### Activities
+
+-   Compare the RMSE and $R^2$ values from the folds to those for the testing set. How did the model do on brand new data?
+
+-   What do you think would happen to the testing RMSE and $R^2$ if we used a model of degree 10 rather than degree 3? Why?
+
+## Pruned Decision Trees
+
+In this section, we will use the same `Wage` data set to fit and prune a decision tree. This is a regression tree because our outcome is continuous, but virtually the same exact code would apply for a classification tree; the only lines that would change would be `set_mode("regression")`, which would become `set_mode("classification")`, and `rmse(wage, .pred)`, which would become a call to whatever classification metric the user chose (i.e. ROC AUC, accuracy, true or false positive rate, etc.).
+
+First we set up a recipe. Here, we'll remove `region`, which is a constant in this data set, and `logwage`, which is a function of `wage` itself and therefore should not be used as a predictor. We'll also dummy code where appropriate and normalize all predictors:
 
 ```{r}
-poly(1:6, degree = 4, raw = TRUE)
+rec_tree <- recipe(wage ~ ., data = wage_train) %>%
+  step_rm(region, logwage) %>% 
+  step_dummy(all_nominal_predictors()) %>% 
+  step_normalize(all_predictors())
 ```
 
-These transformations align with what we would expect. It is still recommended to stick with the default of `raw = FALSE` unless you have a reason not to do that. One of the benefits of using `raw = FALSE` is that the resulting variables are uncorrelated, which is a desirable quality when using a linear regression model.
+Then we'll set up a decision tree model for regression, using the `rpart` engine, and specify that we want to tune the cost-complexity parameter (`cost_complexity = tune()`). The choice to use the `rpart` engine here is primarily motivated by wanting to use an `rpart` plotting function to visualize the pruned tree later. There are other engines to choose from; you can run `?decision_tree` to see other options. Note that most model functions in `tidymodels`, like `decision_tree()`, `logistic_reg()`, etc., all have multiple choices of engines. The engine is the package that underlies the `tidymodels` framework -- literally analogous to the engine of a car.
 
-You can get the raw polynomials by setting `options = list(raw = TRUE)` in `step_poly()`:
+We'll also make a workflow and add the model and recipe:
 
 ```{r}
-rec_raw_poly <- recipe(wage ~ age, data = Wage) %>%
-  step_poly(age, degree = 4, options = list(raw = TRUE))
+tree_spec <- decision_tree(cost_complexity = tune()) %>%
+  set_engine("rpart") %>% 
+  set_mode("regression")
 
-raw_poly_wf <- workflow() %>%
-  add_model(lm_spec) %>%
-  add_recipe(rec_raw_poly)
-
-raw_poly_fit <- fit(raw_poly_wf, data = Wage)
-
-tidy(raw_poly_fit)
+tree_wf <- workflow() %>% 
+  add_model(tree_spec) %>% 
+  add_recipe(rec_tree)
 ```
 
-Let us try something new and visualize the polynomial fit on our data. We can do this easily because we only have 1 predictor and 1 response, starting with creating a tibble with different ranges of age. Then we take this tibble and predict with it, this will give us the regression curve. We are additionally adding confidence intervals by setting `type = "conf_int"` which we can do since we are using a linear regression model.
+We set up a grid of possible values to consider for the cost-complexity parameter and tune the models, fitting all 10 of them to each of the 5 folds for a total of 50 decision trees. Note that `cost_complexity()` also uses the `log10_trans()` function by default, so the values -3 and -1 are in the log-10 scale.
 
 ```{r}
-age_range <- tibble(age = seq(min(Wage$age), max(Wage$age)))
+param_grid <- grid_regular(cost_complexity(range = c(-3, -1)), levels = 10)
 
-regression_lines <- bind_cols(
-  augment(poly_fit, new_data = age_range),
-  predict(poly_fit, new_data = age_range, type = "conf_int")
+tune_tree <- tune_grid(
+  tree_wf, 
+  resamples = wage_folds, 
+  grid = param_grid
 )
-regression_lines
 ```
 
-We will then use `ggplot2` to visualize the fitted line and confidence interval. The green line is the regression curve and the dashed blue lines are the confidence interval.
+Then we can visualize the results:
 
 ```{r}
-Wage %>%
-  ggplot(aes(age, wage)) +
-  geom_point(alpha = 0.2) +
-  geom_line(aes(y = .pred), color = "darkgreen",
-            data = regression_lines) +
-  geom_line(aes(y = .pred_lower), data = regression_lines, 
-            linetype = "dashed", color = "blue") +
-  geom_line(aes(y = .pred_upper), data = regression_lines, 
-            linetype = "dashed", color = "blue")
+autoplot(tune_tree)
 ```
 
-The regression curve is now a curve instead of a line as we would have gotten with a simple linear regression model. Notice furthermore that the confidence bands are tighter when there is a lot of data and wider towards the ends of the data.
+Note that the decision tree model, with pruning, still doesn't do amazing but has done considerably better than our polynomial regression (although in that model we only included the expansion of one predictor, age).
 
-Let us take that one step further and see what happens to the regression line once we go past the domain it was trained on. The previous plot showed individuals within the age range 18-80. Let us see what happens once we push this to 18-100. This is not an impossible range, but an unrealistic range.
+We'll use `select_best()`, `finalize_workflow()`, and `fit()` to choose the best value for the complexity parameter and fit the "winning" model to the entire training set:
 
 ```{r}
-wide_age_range <- tibble(age = seq(18, 100))
+best_complexity <- select_best(tune_tree)
 
-regression_lines <- bind_cols(
-  augment(poly_fit, new_data = wide_age_range),
-  predict(poly_fit, new_data = wide_age_range, type = "conf_int")
-)
+tree_final <- finalize_workflow(tree_wf, best_complexity)
 
-Wage %>%
-  ggplot(aes(age, wage)) +
-  geom_point(alpha = 0.2) +
-  geom_line(aes(y = .pred), color = "darkgreen",
-            data = regression_lines) +
-  geom_line(aes(y = .pred_lower), data = regression_lines, 
-            linetype = "dashed", color = "blue") +
-  geom_line(aes(y = .pred_upper), data = regression_lines, 
-            linetype = "dashed", color = "blue")
+tree_final_fit <- fit(tree_final, data = wage_train)
 ```
 
-And we see that the curve starts diverging; once we get to 93 the predicted wage is negative. The confidence bands also get wider and wider as we get farther away from the data.
-
-We can also think of this problem as a classification problem, and we will do that just now by setting us the task of predicting whether an individual earns more than $250000 per year. We will add a new factor value denoting this response.
+And we can extract the model fit results and view them with the `rpart.plot()` function -- note that this wouldn't work if we'd used a different engine, although we could have used an alternative plotting function in that case.
 
 ```{r}
-Wage <- Wage %>%
-  mutate(high = factor(wage > 250, 
-                       levels = c(TRUE, FALSE), 
-                       labels = c("High", "Low")))
+tree_final_fit %>%
+  extract_fit_engine() %>%
+  rpart.plot()
 ```
 
-We cannot use the polynomial expansion recipe `rec_poly` we created earlier since it had `wage` as the response and now we want to have `high` as the response. We also have to create a logistic regression specification that we will use as our classification model.
+This plot is hard to read, however, because even with pruning the tree, the optimal value of `cost_complexity()` actually resulted in a somewhat deep tree (nowhere near as deep as they can possibly go, but deep enough to be hard to read the figure). We can view the actual splits themselves:
 
 ```{r}
-rec_poly <- recipe(high ~ age, data = Wage) %>%
-  step_poly(age, degree = 4)
-
-lr_spec <- logistic_reg() %>%
-  set_engine("glm") %>%
-  set_mode("classification")
-
-lr_poly_wf <- workflow() %>%
-  add_model(lr_spec) %>%
-  add_recipe(rec_poly)
+tree_final_fit %>% 
+  extract_fit_engine()
 ```
 
-This polynomial logistic regression model workflow can now be fit and predicted with, as usual.
+The first split the tree makes is between 2 and 3; that is, does an individual have an advanced degree?
+
+How do we know this? Well, `education_X5..Advanced.Degree` is a dummy-coded variable generated from `education`, which takes on the values 0 or 1, 0 if someone does not have an advanced degree and 1 if they do. 2) here says that if someone has a score of \< 0.5 on that variable -- meaning if they **do not** have an advanced degree -- they will begin going down one branch of the tree, and 3) says that if they **do** have an advanced degree (a score $\geq 0.5$) they will go down the other branch.
+
+That makes intuitive sense, or at least we hope it's true -- ideally, achieving an advanced degree would contribute to your likelihood of earning a higher wage.
+
+Finally, let's see what the RMSE and $R^2$ of this model are on the testing data:
 
 ```{r}
-lr_poly_fit <- fit(lr_poly_wf, data = Wage)
-
-predict(lr_poly_fit, new_data = Wage)
+augment(tree_final_fit, new_data = wage_test) %>%
+  wage_metrics(wage, .pred)
 ```
 
-If we want we can also get back the underlying probability predictions for the two classes, and their confidence intervals for these probability predictions by setting `type = "prob"` and `type = "conf_int"`.
+The pruned decision tree, with a recipe that includes more predictors, has done considerably better on the testing data; its RMSE has decreased by about 6 (RMSE is in the scale of the outcome) and its $R^2$ has gone from barely 7% to about 31%.
 
-```{r}
-predict(lr_poly_fit, new_data = Wage, type = "prob")
+This model is still not fantastic, but it now explains approximately 31% of the variance in `age`. A random forest or boosted tree might do even better; we'll explore these possibilities in Lab 7.
 
-predict(lr_poly_fit, new_data = Wage, type = "conf_int")
-```
+### Activities
 
-We can use these to visualize the probability curve for the classification model.
+-   Try running the same code but **without** removing `logwage`. What happens? Why does it happen? Does it make sense to use `logwage` to predict `wage`?
 
-```{r}
-regression_lines <- bind_cols(
-  augment(lr_poly_fit, new_data = age_range, type = "prob"),
-  predict(lr_poly_fit, new_data = age_range, type = "conf_int")
-)
+-   Explain why we need or want to prune decision trees at all. What tends to happen if we don't prune them?
 
-regression_lines %>%
-  ggplot(aes(age)) +
-  ylim(c(0, 0.2)) +
-  geom_line(aes(y = .pred_High), color = "darkgreen") +
-  geom_line(aes(y = .pred_lower_High), color = "blue", linetype = "dashed") +
-  geom_line(aes(y = .pred_upper_High), color = "blue", linetype = "dashed") +
-  geom_jitter(aes(y = (high == "High") / 5), data = Wage, 
-              shape = "|", height = 0, width = 0.2)
-```
-
-Next, let us take a look at the step function and how to fit a model using it as a preprocessor. You can create step functions in a couple of different ways. `step_discretize()` will convert a numeric variable into a factor variable with n bins, n here is specified with `num_breaks`. These will have approximately the same number of points in them according to the training data set.
-
-```{r}
-rec_discretize <- recipe(high ~ age, data = Wage) %>%
-  step_discretize(age, num_breaks = 4)
-
-discretize_wf <- workflow() %>%
-  add_model(lr_spec) %>%
-  add_recipe(rec_discretize)
-
-discretize_fit <- fit(discretize_wf, data = Wage)
-discretize_fit
-```
-
-If you already know where you want the step function to break then you can use `step_cut()` and supply the breaks manually.
-
-```{r}
-rec_cut <- recipe(high ~ age, data = Wage) %>%
-  step_cut(age, breaks = c(30, 50, 70))
-
-cut_wf <- workflow() %>%
-  add_model(lr_spec) %>%
-  add_recipe(rec_cut)
-
-cut_fit <- fit(cut_wf, data = Wage)
-cut_fit
-```
-
-## Splines
-
-In order to fit regression splines, or in other words, use splines as preprocessors when fitting a linear model, we use `step_bs()` to construct the matrices of basis functions. The `bs()` function is used and arguments such as knots can be passed to `bs()` by using passing a named list to options.
-
-```{r}
-rec_spline <- recipe(wage ~ age, data = Wage) %>%
-  step_bs(age, options = list(knots = 25, 40, 60))
-```
-
-We already have the linear regression specification `lm_spec` so we can create the workflow, fit the model and predict with it like we have seen how to do in the previous chapters.
-
-```{r}
-spline_wf <- workflow() %>%
-  add_model(lm_spec) %>%
-  add_recipe(rec_spline)
-
-spline_fit <- fit(spline_wf, data = Wage)
-
-predict(spline_fit, new_data = Wage)
-```
-
-Lastly, we can plot the basic spline on top of the data.
-
-```{r}
-regression_lines <- bind_cols(
-  augment(spline_fit, new_data = age_range),
-  predict(spline_fit, new_data = age_range, type = "conf_int")
-)
-
-Wage %>%
-  ggplot(aes(age, wage)) +
-  geom_point(alpha = 0.2) +
-  geom_line(aes(y = .pred), data = regression_lines, color = "blue") +
-  geom_line(aes(y = .pred_lower), data = regression_lines, 
-            linetype = "dashed", color = "blue") +
-  geom_line(aes(y = .pred_upper), data = regression_lines, 
-            linetype = "dashed", color = "blue")
-```
+-   What do you think one of the more useful predictors is in this model? What makes you say so?
 
 ## Resources
 
 The free book [Tidy Modeling with R](https://www.tmwr.org/) is strongly recommended.
-
-## Source
-
-Several parts of this lab come directly from the ["ISLR Tidymodels Labs"](https://emilhvitfeldt.github.io/ISLR-tidymodels-labs/index.htmll). Credit to Emil Hvitfeldt for writing and maintaining the open-source book.
