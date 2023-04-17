@@ -1,5 +1,0 @@
-"0","pokemon <- pokemon %>% "
-"0","  filter(type_1 %in% c('Bug', 'Fire', 'Grass', 'Normal', 'Water', 'Psychic'))"
-"0","pokemon %>% "
-"0","  ggplot(aes(y = type_1)) +"
-"0","  geom_bar()"

@@ -1,2 +1,0 @@
-"0","set.seed(3435)"
-"0","pokemon_folds <- vfold_cv(data = pokemon_train, v = 5, strata = type_1)"

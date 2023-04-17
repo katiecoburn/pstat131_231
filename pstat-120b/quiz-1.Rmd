@@ -1,0 +1,58 @@
+---
+title: "Quiz 1"
+author: "PSTAT 120B"
+date: "Spring 2023"
+output: pdf_document
+header-includes:
+    - \usepackage{geometry}
+    - \usepackage{fancyhdr}
+    - \usepackage{url}
+    - \usepackage{booktabs}
+    - \usepackage{hyperref}
+    - \usepackage{color}
+    - \usepackage{lastpage}
+    - \usepackage{multirow}
+    - \usepackage{graphicx}
+    - \usepackage{lscape}
+    - \usepackage{float}
+#    - \usepackage{draftwatermark}
+link-citations: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE,
+                      warning = FALSE)
+```
+
+\pagestyle{fancy}
+\lhead{Spring 2023}
+\chead{}
+\rhead{Quiz 1}
+\lfoot{}
+\cfoot{\small \thepage}
+\rfoot{}
+
+\section*{Instructions:}
+
+\textsc{Write clearly} and neatly on a sheet of paper. Make sure to write your full name, as listed on GauchoSpace, and your perm number at the top of the page in order to receive credit. You should \textbf{try not to} use your notes to complete this quiz; we encourage you to attempt it without assistance in order to check your understanding of the material.
+
+\section*{Problem:}
+
+\begin{enumerate}
+
+\item Let $X \sim U(5, 10)$ and $Y \sim U(5, 10)$ be independent random variables. Let $c = 2$, $d = 3.5$, and $e = 6$. For (b), (c), and (d) below, you should find and report a specific number.
+
+Note that the density of a uniform random variable $U(a, b)$ is $\frac{1}{b-a}$.
+
+\begin{enumerate}
+
+\item Write the joint density $f(x, y)$.
+
+\item Find $E[cdX - Y + e]$.
+
+\item Find $E[Y^{2}]$.
+
+\item Find $var(cX + dY + e)$.
+
+\end{enumerate}
+\end{enumerate}

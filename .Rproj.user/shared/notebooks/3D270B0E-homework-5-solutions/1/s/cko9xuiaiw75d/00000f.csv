@@ -1,2 +1,0 @@
-"0","pokemon <- pokemon %>% "
-"0","  mutate(type_1 = factor(type_1), legendary = factor(legendary))"

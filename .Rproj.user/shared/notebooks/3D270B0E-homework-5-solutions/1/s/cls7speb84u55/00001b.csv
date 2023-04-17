@@ -1,3 +1,0 @@
-"0","pokemon %>% "
-"0","  ggplot(aes(y = type_1)) +"
-"0","  geom_bar()"

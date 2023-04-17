@@ -1,1 +1,0 @@
-"0","titanic_recipe_b <- recipe(survived ~ sib_sp, titanic_train)"

@@ -1,0 +1,63 @@
+---
+title: "Quiz 2"
+author: "PSTAT 120B"
+date: "Spring 2023"
+output: pdf_document
+header-includes:
+    - \usepackage{geometry}
+    - \usepackage{fancyhdr}
+    - \usepackage{url}
+    - \usepackage{booktabs}
+    - \usepackage{hyperref}
+    - \usepackage{color}
+    - \usepackage{lastpage}
+    - \usepackage{multirow}
+    - \usepackage{graphicx}
+    - \usepackage{lscape}
+    - \usepackage{float}
+#    - \usepackage{draftwatermark}
+link-citations: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE,
+                      warning = FALSE)
+```
+
+\pagestyle{fancy}
+\lhead{Spring 2023}
+\chead{}
+\rhead{Quiz 2}
+\lfoot{}
+\cfoot{\small \thepage}
+\rfoot{}
+
+\section*{Instructions:}
+
+\textsc{Write clearly} and neatly on a sheet of paper. Make sure to write your full name, as listed on GauchoSpace, and your perm number at the top of the page in order to receive credit. You should \textbf{try not to} use your notes to complete this quiz; we encourage you to attempt it without assistance in order to check your understanding of the material.
+
+\section*{Problem:}
+
+\begin{enumerate}
+
+\item Let $Y$ be a random variable with a density function given by
+
+$$
+f(y) = \begin{cases}
+\frac{3}{2}y^2, & -1 \leq y \leq 1, \\
+0, & elsewhere.
+\end{cases}
+$$
+
+\begin{enumerate}
+
+\item Find the density function of $U_1 = 3Y$.
+
+\item Find the density function of $U_2 = 3 - Y$.
+
+\item Find the density function of $U_3 = Y^2$.
+
+\item Find $E[U_1]$, $E[U_2]$, and $E[U_3]$.
+
+\end{enumerate}
+\end{enumerate}
