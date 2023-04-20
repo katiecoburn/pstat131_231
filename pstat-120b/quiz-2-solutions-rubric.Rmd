@@ -49,15 +49,116 @@ f(y) = \begin{cases}
 \end{cases}
 $$
 
+These three densities will be easiest to find/derive using the method of direct integration (or the method of distribution functions).
+
 \begin{enumerate}
 
 \item Find the density function of $U_1 = 3Y$.
 
+First, we identify the region of support for $U_1$, which is from $-3$ (for $y = -1$) to $3$ (for $y = 1$). Then we write the CDF of $U_1$ in terms of $Y$:
+
+$$
+\begin{aligned}
+F(u) &= P(U \leq u) \\
+&= P(3Y \leq u) \\
+&= P(Y \leq \frac{u}{3})
+\end{aligned}
+$$
+
+Then we use integration to find this; first we have to find the CDF of $Y$, or $F_Y(y)$:
+
+$$
+\begin{aligned}
+F_Y(y) &= \int_{-\infty}^{\infty} f(y)dy \\
+&= \int_{-1}^{y} \frac{3}{2}y^2dy \\
+&= \frac{3}{2}\left[\frac{y^3}{3}\right]_{-1}^{y} \\
+F(y) &= \frac{1}{2}(y^3 - 1)
+\end{aligned}
+$$
+
+Then:
+
+$$
+\begin{aligned}
+F_{U_1}(u) &= F_Y\left(\frac{u}{3}\right) \\
+&= \frac{1}{2}\left(\left(\frac{u}{3}\right)^3 - 1\right) \\
+&= \frac{1}{2}\left(\frac{u^3}{18} - 1\right)
+\end{aligned}
+$$
+
+and the density is as follows for $-3 \leq U_1 \leq 3$ and 0 otherwise.
+
+$$
+\begin{aligned}
+f_{U_1}(u) &= F_{U_1}^{-1}(u) \\
+&= \frac{d}{du_1}\frac{1}{2}\left(\frac{u^3}{18} - 1\right) \\
+&= \frac{1}{12}u^2
+\end{aligned}
+$$
+
 \item Find the density function of $U_2 = 3 - Y$.
+
+First, since $Y$ can range from $-1$ to $1$, $U$ can range from/is supported from $2$ to $4$. Then:
+
+$$
+\begin{aligned}
+F_{U_2}(u) &= P(U_2 \leq u) \\
+&= P(3 - Y \leq u) \\
+&= P(-Y \leq u - 3) \\
+&= P(Y \geq 3 - u) \\
+F_{U_2}(u) &= 1 - F_Y(3 - u)
+\end{aligned}
+$$
+and $F_Y(3 - u) = \frac{1}{2}\left[(3 - u)^3 - 1\right]$, so $1 - F_Y(3 - u) = 1 - \left[\frac{(3 - u)^3}{2} - \frac{1}{2}\right]$.
+
+Then $f_{U_2}(u) = F_{U_2}^{-1}(u) = \frac{3}{2}(3 - u)^2$ for the region $2 \leq U \leq 4$. 
 
 \item Find the density function of $U_3 = Y^2$.
 
+First, $U_3$ can range from $0$ to $1$. Then:
+
+$$
+\begin{aligned}
+F_{U_3}(u) &= P(U_3 \leq u) \\
+&= P(Y^2 \leq u) \\
+&= P(-\sqrt{u} \leq Y \leq \sqrt{u}) \\
+&= F_Y(\sqrt{u}) - F_Y(-\sqrt{u}) \\
+F_{U_3}(u) &= u^{\frac{3}{2}}
+\end{aligned}
+$$
+
+Then $f_{U_3}(u) = F_{U_3}^{-1}(u) = \frac{3}{2}\sqrt{u}$ for $0 \leq u \leq 1$.
+
 \item Find $E[U_1]$, $E[U_2]$, and $E[U_3]$.
+
+$$
+\begin{aligned}
+E[U_1] &= \int_{-3}^{3}u_1f(u_1)du_1 \\
+&= \int_{-3}^{3}u_1^3\frac{1}{12}du_1 \\
+&= \frac{1}{12}\left[\frac{{u_1}^4}{4}\right]_{-3}^{3} \\
+&= \frac{1}{12}(20.25 - 20.25) \\
+E[U_1] &= 0
+\end{aligned}
+$$
+
+$$
+\begin{aligned}
+E[U_2] &= \int_{2}^{4}u_2f(u_2)du_2 \\
+&= \int_{2}^{4}u_2\frac{3}{2}(3 - u_2)^2 \\
+&= \left[\frac{3(u_2 - 3)^3(u^2 + 1)}{8}\right]_{2}^{4} \\
+E[U_2] &= 3
+\end{aligned}
+$$
+
+and
+
+$$
+\begin{aligned}
+E[U_3] &= \int_{0}^{1}u_3\frac{3}{2}\sqrt{u_3}du_3 \\
+&= \frac{3}{2}\int_{0}^{1}u_{3}^{\frac{3}{2}} \\
+E[U_3] &= 0.6
+\end{aligned}
+$$
 
 \end{enumerate}
 \end{enumerate}
