@@ -1,0 +1,81 @@
+---
+title: "Quiz 3"
+author: "PSTAT 120B"
+date: "Spring 2023"
+output: pdf_document
+header-includes:
+    - \usepackage{geometry}
+    - \usepackage{fancyhdr}
+    - \usepackage{url}
+    - \usepackage{booktabs}
+    - \usepackage{hyperref}
+    - \usepackage{color}
+    - \usepackage{lastpage}
+    - \usepackage{multirow}
+    - \usepackage{graphicx}
+    - \usepackage{lscape}
+    - \usepackage{float}
+#    - \usepackage{draftwatermark}
+link-citations: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE,
+                      warning = FALSE)
+```
+
+```{=tex}
+\pagestyle{fancy}
+\lhead{Spring 2023}
+\chead{}
+\rhead{Quiz 2}
+\lfoot{}
+\cfoot{\small \thepage}
+\rfoot{}
+```
+\section*{Instructions:}
+
+\textsc{Write clearly} and neatly on a sheet of paper. Make sure to write your full name, as listed on GauchoSpace, and your perm number at the top of the page in order to receive credit. You should \textbf{try not to} use your notes to complete this quiz; we encourage you to attempt it without assistance in order to check your understanding of the material.
+
+\section*{Problem:}
+
+```{=tex}
+\begin{enumerate}
+
+\item Let $Y_1, Y_2, ..., Y_5$ be a random sample of size $5$ from a normal population with a mean of $0$ and a variance of $1$, and let $\bar{Y} = \frac{1}{5}\sum_{i=1}^5Y_i$. Let $Y_6$ be another independent observation drawn from the same population.
+
+For each of the following functions of these random variables, what are their distributions? How do you know/why?
+
+\begin{enumerate}
+
+\item $W = \sum_{i=1}^5 Y_i^2$.
+
+Students should recognize that each $Y_i$ follows a standard normal distribution (a normal distribution with mean of $0$ and variance of $1$). That means that $W$ is the sum of $5$ squared standard normal variables. Per Homework 1 problem 2a, we derived that a single squared standard normal follows a chi-square distribution with $1$ degree of freedom, or $\eta = 1$. In Homework 1 problem 3, we derived that the sum of two squared standard normals follows a chi-square distribution with $\eta = 2$. Therefore, the sum of five squared standard normals will follow a chi-square distribution with $\eta = 5$.
+
+Students could also cite Theorem 7.2, which states this result more generally.
+
+Either way, $W \sim \chi^2(5)$.
+
+\item $U = \sum_{i=1}^5\left(Y_i - \bar{Y}\right)^2$.
+
+The easiest way to find this distribution is to note that here, $\sigma^2 = 1$ and $n = 5$. We proved in class that $\frac{(n - 1)S^2}{\sigma^2}$, which is equal to $\frac{\sum_{i=1}^n\left(Y_i - \bar{Y}\right)^2}{\sigma^2}$, is distributed chi-squared with $\eta = n - 1$. Students could also cite Theorem 7.3 for this proof.
+
+Here, this means that $U \sim \chi^2(4)$. 
+
+\item $V = U + Y_6^2$.
+
+We now know that $U \sim \chi^2(4)$. $Y_6$ is another standard normal random variable, so $Y_6^2 \sim \chi^2(1)$ (again per Homework 1, problem 2a). Then we know that $Y_6$ is \textbf{independent} of the other $5$, meaning it is independent of $U$, so we have the sum of two chi-squared random variables. The moment-generating function of a sum of independent random variables is the product of their individual moment-generating functions. That means the distribution of $V$ is chi-squared with $4 + 1 = 5$ degrees of freedom.
+
+In other words, $V \sim \chi^2(5)$.
+
+\item $R = 5\bar{Y}^2 + Y_6^2$.
+
+We know a few things going in, namely: $Y_6$ and $\bar{Y}$ are independent, and $Y_6^2 \sim \chi^2(1)$. We just need to find the distribution of $5\bar{Y}^2$.
+
+We also know that the distribution of the sample mean, $\bar{Y}$, is $N(\mu, \frac{\sigma^2}{n})$, and here $\mu = 0$, $\sigma^2 = 1$, and $n = 5$. That means that $\bar{Y} \sim N\left(0, \frac{1}{5}\right)$. We know that $\frac{(\bar{Y} - \mu)\sqrt{n}}{\sigma^2} \sim N(0, 1)$, or, in this case, $\frac{(\bar{Y} - 0)\sqrt{5}}{1} = \bar{Y}\sqrt{5} \sim N(0, 1)$. Finally, that means that $\left(\bar{Y}\sqrt{5}\right)^2$ is a squared standard normal, so $5\bar{Y}^2 \sim \chi^2(1)$.
+
+Therefore, we have the sum of two independent random variables, each distributed chi-square with one degree of freedom, so the result is: $R \sim \chi^2(2)$.
+
+\end{enumerate}
+\end{enumerate}
+```

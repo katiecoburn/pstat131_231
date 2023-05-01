@@ -1,0 +1,58 @@
+---
+title: "Quiz 3"
+author: "PSTAT 120B"
+date: "Spring 2023"
+output: pdf_document
+header-includes:
+    - \usepackage{geometry}
+    - \usepackage{fancyhdr}
+    - \usepackage{url}
+    - \usepackage{booktabs}
+    - \usepackage{hyperref}
+    - \usepackage{color}
+    - \usepackage{lastpage}
+    - \usepackage{multirow}
+    - \usepackage{graphicx}
+    - \usepackage{lscape}
+    - \usepackage{float}
+#    - \usepackage{draftwatermark}
+link-citations: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE,
+                      warning = FALSE)
+```
+
+\pagestyle{fancy}
+\lhead{Spring 2023}
+\chead{}
+\rhead{Quiz 2}
+\lfoot{}
+\cfoot{\small \thepage}
+\rfoot{}
+
+\section*{Instructions:}
+
+\textsc{Write clearly} and neatly on a sheet of paper. Make sure to write your full name, as listed on GauchoSpace, and your perm number at the top of the page in order to receive credit. You should \textbf{try not to} use your notes to complete this quiz; we encourage you to attempt it without assistance in order to check your understanding of the material.
+
+\section*{Problem:}
+
+\begin{enumerate}
+
+\item Let $Y_1, Y_2, ..., Y_5$ be a random sample of size $5$ from a normal population with a mean of $0$ and a variance of $1$, and let $\bar{Y} = \frac{1}{5}\sum_{i=1}^5Y_i$. Let $Y_6$ be another independent observation drawn from the same population.
+
+For each of the following functions of these random variables, what are their distributions? How do you know/why?
+
+\begin{enumerate}
+
+\item $W = \sum_{i=1}^5 Y_i^2$.
+
+\item $U = \sum_{i=1}^5\left(Y_i - \bar{Y}\right)^2$.
+
+\item $V = U + Y_6^2$.
+
+\item $R = 5\bar{Y}^2 + Y_6^2$.
+
+\end{enumerate}
+\end{enumerate}
